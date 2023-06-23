@@ -1,0 +1,2 @@
+*.exe
+!offline1/cse410_offline1_sample_windows/*.exe
