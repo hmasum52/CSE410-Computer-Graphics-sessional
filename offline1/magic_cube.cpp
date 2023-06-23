@@ -6,8 +6,9 @@
 #include <tuple>
 using namespace std;
 
-//typedef vector<vector<tuple<double, double, double>>> Matrix;
-typedef tuple<double, double, double> Point3D;
+struct Point3D{
+    GLfloat x, y, z;
+};
 
 class Color {
 public:
@@ -39,14 +40,22 @@ void initGL() {
 }
 
 // Global variables
-const GLfloat DEFAULT_ZOOM = 2.5;
-GLfloat eyex = DEFAULT_ZOOM, eyey = DEFAULT_ZOOM, eyez = DEFAULT_ZOOM;
-GLfloat centerx = 0, centery = 0, centerz = 0;
-GLfloat upx = 0, upy = 1, upz = 0;
+const GLfloat DEFAULT_ZOOM = 2.3;
 bool isPyramid = true; //false;
+
+Point3D eye;       // camera position
+Point3D look;    // camera looks at
+Point3D r;     // right vector for camera
+Point3D up;        // up direction for camera
 
 // sphere parameters
 GLdouble radius = 0.0;
+
+// object rotation
+GLfloat objAngle = 0.0f;
+
+// camera movement
+bool isCameraMoving = false;
 
 /* Draw axes: X in Red, Y in Green and Z in Blue */
 void drawAxes() {
@@ -120,7 +129,7 @@ void drawCubesphere(Color color){
     // compute the number of vertices per row, 2^n + 1
     int pointsPerRow = (int)pow(2, subdivision) + 1;
 
-    Point3D vertices[pointsPerRow][pointsPerRow];
+    tuple<double, double, double> vertices[pointsPerRow][pointsPerRow];
 
     float n1[3];        // normal of longitudinal plane rotating along Y-axis
     float n2[3];        // normal of latitudinal plane rotating along Z-axis
@@ -310,23 +319,33 @@ void display() {
     glMatrixMode(GL_MODELVIEW);             // To operate on Model-View matrix
     glLoadIdentity();                       // Reset the model-view matrix
 
-    // default arguments of gluLookAt
-    // gluLookAt(0,0,0, 0,0,-100, 0,1,0);
-
     // control viewing (or camera)
-    // for 3D view
-    gluLookAt(eyex,eyey,eyez,
-            centerx,centery,centerz,
-            upx,upy,upz);
+
+    // cross multiplication between (l-eye) and u
+    r.x = (look.y-eye.y)*up.z - (look.z-eye.z)*up.y;
+    r.y = (look.z-eye.z)*up.x - (look.x-eye.x)*up.z;
+    r.z = (look.x-eye.x)*up.y - (look.y-eye.y)*up.x;
+
+    // camera control
+    if(isCameraMoving)
+        gluLookAt(eye.x,eye.y,eye.z,
+            0, 0, 0,
+            up.x,up.y,up.z);
+    else
+        gluLookAt(eye.x,eye.y,eye.z,
+                eye.x + look.x ,eye.y + look.y,eye.z + look.z,
+                up.x,up.y,up.z);
 
     // draw
-    drawAxes();
-    if (isPyramid) drawAllCylinder();
-    if (isPyramid) drawOctaHedron();
-    if (isPyramid) drawSphere();
-    //drawCylinder(1, 0.5, 100);
+    // rotate everything wrt y axis
+    glPushMatrix();{
+        glRotatef(objAngle, 0, 1, 0);
 
-
+        drawAxes();
+        if (isPyramid) drawAllCylinder();
+        if (isPyramid) drawOctaHedron();
+        if (isPyramid) drawSphere();
+    }glPopMatrix();
 
     glutSwapBuffers();  // Render now
 }
@@ -344,91 +363,99 @@ void reshapeListener(GLsizei width, GLsizei height) {  // GLsizei for non-negati
     // Set the aspect ratio of the clipping area to match the viewport
     glMatrixMode(GL_PROJECTION);  // To operate on the Projection matrix
     glLoadIdentity();             // Reset the projection matrix
-    /*if (width >= height) {
-        // aspect >= 1, set the height from -1 to 1, with larger width
-        gluOrtho2D(-1.0 * aspect, 1.0 * aspect, -1.0, 1.0);
-    } else {
-        // aspect < 1, set the width to -1 to 1, with larger height
-        gluOrtho2D(-1.0, 1.0, -1.0 / aspect, 1.0 / aspect);
-    }*/
 
     // Enable perspective projection with fovy, aspect, zNear and zFar
     // for 3D view
     gluPerspective(45.0f, aspect, 0.1f, 100.0f);
 }
 
-
-void rotateObject(bool isAntiClockwise=false){
-    double v = 0.25;           // rotation speed 
-    double lx = centerx - eyex; // look vector x
-    double lz = centerz - eyez; // look vector z
-
-    int dir = isAntiClockwise ? 1 : -1;
-
-    eyex += v * (dir*upy*lz);
-    eyez += v * (-dir*lx*upy);
-    double s = sqrt(eyex*eyex + eyez*eyez) / (DEFAULT_ZOOM * sqrt(2));
-    eyex /= s;
-    eyez /= s;
-}
-
 /* Callback handler for normal-key event */
 void keyboardListener(unsigned char key, int x, int y) {
-    float v = 0.1;
-    switch (key) {
-    // Control eye (location of the eye)
-    // control eyex
-    case '1':
-        eyex += v;
-        break;
-    case '2':
-        eyex -= v;
-        break;
-    // control eyey
-    case '3':
-        eyey += v;
-        break;
-    case '4':
-        eyey -= v;
-        break;
-    // control eyez
-    case '5':
-        eyez += v;
-        break;
-    case '6':
-        eyez -= v;
-        break;
+    double rate = 0.01;
+    isCameraMoving = false;
+	switch(key){
+		case '1': // rotate/look right
+			r.x = r.x*cos(rate)+look.x*sin(rate);
+			r.y = r.y*cos(rate)+look.y*sin(rate);
+			r.z = r.z*cos(rate)+look.z*sin(rate);
 
-    // Control center (location where the eye is looking at)
-    // control centerx
-    case 'q':
-        centerx += v;
-        break;
-    case 'w':
-        centerx -= v;
-        break;
-    // control centery
-    case 'e':
-        centery += v;
-        break;
-    case 'r':
-        centery -= v;
-        break;
-    // control centerz
-    case 't':
-        centerz += v;
-        break;
-    case 'y':
-        centerz -= v;
-        break;
+			look.x = look.x*cos(rate)-r.x*sin(rate);
+			look.y = look.y*cos(rate)-r.y*sin(rate);
+			look.z = look.z*cos(rate)-r.z*sin(rate);
+			break;
 
+        case '2': // rotate/look left
+			r.x = r.x*cos(-rate)+look.x*sin(-rate);
+			r.y = r.y*cos(-rate)+look.y*sin(-rate);
+			r.z = r.z*cos(-rate)+look.z*sin(-rate);
+
+			look.x = look.x*cos(-rate)-r.x*sin(-rate);
+			look.y = look.y*cos(-rate)-r.y*sin(-rate);
+			look.z = look.z*cos(-rate)-r.z*sin(-rate);
+			break;
+
+        case '3': // look up
+            rate = 0.1;
+			look.x = look.x*cos(rate)+up.x*sin(rate);
+			look.y = look.y*cos(rate)+up.y*sin(rate);
+			look.z = look.z*cos(rate)+up.z*sin(rate);
+
+			up.x = up.x*cos(rate)-look.x*sin(rate);
+			up.y = up.y*cos(rate)-look.y*sin(rate);
+			up.z = up.z*cos(rate)-look.z*sin(rate);
+			break;
+
+        case '4': // look down 
+            rate = 0.1;
+			look.x = look.x*cos(-rate)+up.x*sin(-rate);
+			look.y = look.y*cos(-rate)+up.y*sin(-rate);
+			look.z = look.z*cos(-rate)+up.z*sin(-rate);
+
+			up.x = up.x*cos(-rate)-look.x*sin(-rate);
+			up.y = up.y*cos(-rate)-look.y*sin(-rate);
+			up.z = up.z*cos(-rate)-look.z*sin(-rate);
+			break;
+
+        case '5': // tilt counter clockwise
+            rate = 0.01;
+			up.x = up.x*cos(rate)+r.x*sin(rate);
+			up.y = up.y*cos(rate)+r.y*sin(rate);
+			up.z = up.z*cos(rate)+r.z*sin(rate);
+
+			r.x = r.x*cos(rate)-up.x*sin(rate);
+			r.y = r.y*cos(rate)-up.y*sin(rate);
+			r.z = r.z*cos(rate)-up.z*sin(rate);
+			break;
+
+        case '6': // tilt clockwise
+            rate = 0.01;
+			up.x = up.x*cos(-rate)+r.x*sin(-rate);
+			up.y = up.y*cos(-rate)+r.y*sin(-rate);
+			up.z = up.z*cos(-rate)+r.z*sin(-rate);
+
+			r.x = r.x*cos(-rate)-up.x*sin(-rate);
+			r.y = r.y*cos(-rate)-up.y*sin(-rate);
+			r.z = r.z*cos(-rate)-up.z*sin(-rate);
+			break;
     // Controlling Object
     case 'a':
-        rotateObject(); // rotate clockwise
+        objAngle -= 10; // rotate clockwise
         break;
     case 'd':
-        rotateObject(true); // rotate anti-clockwise
+        objAngle += 10; // rotate anti-clockwise
         break;
+    // w - move up without changing reference point
+    case 'w':
+        eye.y += 0.1;
+        isCameraMoving = true;
+        break;
+    // s - move down without changing reference point
+    case 's':
+        eye.y -= 0.1;
+        isCameraMoving = true;
+        break;
+
+    
     case '.':
         radius -= 0.045;
         if(radius<0)
@@ -450,32 +477,43 @@ void keyboardListener(unsigned char key, int x, int y) {
 
 /* Callback handler for special-key event */
 void specialKeyListener(int key, int x,int y) {
-    double v = 0.25;           
-    double lx = centerx - eyex; // look vector x
-    double lz = centerz - eyez; // look vector z
-    double s;                   // scaling factor
-    switch (key) {
-    case GLUT_KEY_LEFT: // rotate anti-clockwise
-        eyex += v * (upy*lz);
-        eyez += v * (-lx*upy);
-        s = sqrt(eyex*eyex + eyez*eyez) / (4 * sqrt(2));
-        eyex /= s;
-        eyez /= s;
-        break;
-    case GLUT_KEY_RIGHT: // rotate clockwise
-        eyex += v * (-upy*lz);
-        eyez += v * (lx*upy);
-        s = sqrt(eyex*eyex + eyez*eyez) / (4 * sqrt(2));
-        eyex /= s;
-        eyez /= s;
-        break;
-    case GLUT_KEY_UP:
-        eyey += v;
-        break;
-    case GLUT_KEY_DOWN:
-        eyey -= v;
-        break;
-    
+    double rate = 0.1;                          // scaling factor
+    switch(key){
+		case GLUT_KEY_UP:		//down arrow key
+			eye.x+=look.x * rate;
+			eye.y+=look.y * rate;
+			eye.z+=look.z * rate;
+			break;
+		case GLUT_KEY_DOWN:		// up arrow key
+			eye.x-=look.x * rate;
+			eye.y-=look.y * rate;
+			eye.z-=look.z * rate;
+			break;
+
+		case GLUT_KEY_RIGHT:
+            rate = 0.02;
+			eye.x+=r.x * rate;
+			eye.y+=r.y * rate;
+			eye.z+=r.z * rate;
+			break;
+		case GLUT_KEY_LEFT :
+            rate = 0.02;
+			eye.x-=r.x * rate;
+			eye.y-=r.y * rate;
+			eye.z-=r.z * rate;
+			break;
+		case GLUT_KEY_PAGE_UP:
+            rate = 0.1;
+		    eye.x+=up.x * rate ;
+			eye.y+=up.y * rate;
+			eye.z+=up.z * rate;
+			break;
+		case GLUT_KEY_PAGE_DOWN:
+            rate = 0.1;
+            eye.x-=up.x * rate;
+			eye.y-=up.y * rate;
+			eye.z-=up.z * rate;
+			break;
     default:
         return;
     }
@@ -484,6 +522,11 @@ void specialKeyListener(int key, int x,int y) {
 
 /* Main function: GLUT runs as a console application starting at main()  */
 int main(int argc, char** argv) {
+    eye.x = eye.y =  eye.z = DEFAULT_ZOOM;
+    look.x = look.y = look.z = -DEFAULT_ZOOM;
+    up.x = up.z = 0; up.y = 1;
+    r.x = 1; r.y = r.z = 0;
+
     glutInit(&argc, argv);                      // Initialize GLUT
     glutInitWindowSize(640, 640);               // Set the window's initial width & height
     glutInitWindowPosition(50, 50);             // Position the window's initial top-left corner
