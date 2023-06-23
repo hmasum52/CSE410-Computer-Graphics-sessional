@@ -39,10 +39,11 @@ void initGL() {
 }
 
 // Global variables
-GLfloat eyex = 2.5, eyey = 2.5, eyez = 2.5;
+const GLfloat DEFAULT_ZOOM = 2.5;
+GLfloat eyex = DEFAULT_ZOOM, eyey = DEFAULT_ZOOM, eyez = DEFAULT_ZOOM;
 GLfloat centerx = 0, centery = 0, centerz = 0;
 GLfloat upx = 0, upy = 1, upz = 0;
-bool isAxes = true, isPyramid = true; //false;
+bool isPyramid = true; //false;
 
 // sphere parameters
 GLdouble radius = 0.0;
@@ -319,7 +320,7 @@ void display() {
             upx,upy,upz);
 
     // draw
-    if (isAxes) drawAxes();
+    drawAxes();
     if (isPyramid) drawAllCylinder();
     if (isPyramid) drawOctaHedron();
     if (isPyramid) drawSphere();
@@ -366,7 +367,7 @@ void rotateObject(bool isAntiClockwise=false){
 
     eyex += v * (dir*upy*lz);
     eyez += v * (-dir*lx*upy);
-    double s = sqrt(eyex*eyex + eyez*eyez) / (4 * sqrt(2));
+    double s = sqrt(eyex*eyex + eyez*eyez) / (DEFAULT_ZOOM * sqrt(2));
     eyex /= s;
     eyez /= s;
 }
