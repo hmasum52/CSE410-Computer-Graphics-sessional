@@ -21,6 +21,7 @@
         "iostream": "cpp",
         "ostream": "cpp",
         "*.asm": "assembly",
-        "cmath": "cpp"
+        "cmath": "cpp",
+        "tuple": "cpp"
     }
 }
