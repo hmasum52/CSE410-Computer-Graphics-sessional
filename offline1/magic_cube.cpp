@@ -322,9 +322,10 @@ void display() {
     // control viewing (or camera)
 
     // cross multiplication between (l-eye) and u
-    r.x = (look.y-eye.y)*up.z - (look.z-eye.z)*up.y;
-    r.y = (look.z-eye.z)*up.x - (look.x-eye.x)*up.z;
-    r.z = (look.x-eye.x)*up.y - (look.y-eye.y)*up.x;
+    r.x = (look.y)*up.z - (look.z)*up.y;
+    r.y = (look.z)*up.x - (look.x)*up.z;
+    r.z = (look.x)*up.y - (look.y)*up.x;
+
 
     // camera control
     if(isCameraMoving)
