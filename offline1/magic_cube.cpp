@@ -327,19 +327,20 @@ void display() {
     r.z = (look.x)*up.y - (look.y)*up.x;
 
 
-    // camera control
+    //camera control
     if(isCameraMoving)
         gluLookAt(eye.x,eye.y,eye.z,
             0, 0, 0,
             up.x,up.y,up.z);
     else
-        gluLookAt(eye.x,eye.y,eye.z,
-                eye.x + look.x ,eye.y + look.y,eye.z + look.z,
-                up.x,up.y,up.z);
+    gluLookAt(eye.x,eye.y,eye.z,
+            eye.x + look.x ,eye.y + look.y,eye.z + look.z,
+            up.x,up.y,up.z);
 
     // draw
     // rotate everything wrt y axis
     glPushMatrix();{
+        //if(isCameraMoving) glTranslatef(0, 1, 0);
         glRotatef(objAngle, 0, 1, 0);
 
         drawAxes();
@@ -448,11 +449,13 @@ void keyboardListener(unsigned char key, int x, int y) {
     // w - move up without changing reference point
     case 'w':
         eye.y += 0.1;
+        look.y -= 0.1;
         isCameraMoving = true;
         break;
     // s - move down without changing reference point
     case 's':
         eye.y -= 0.1;
+        look.y += 0.1;
         isCameraMoving = true;
         break;
 
