@@ -1,3 +1,14 @@
+/**
+ * @file magic_cube.cpp
+ * @author Hasan Masum (https://hmasum52.github.io/), Dept. of CSE, BUET
+ * Level 4, Term 1, CSE 410: Computer Graphics Sessional
+ * 
+ * @brief 
+ * @version 0.1
+ * @date 2023-06-25
+ * 
+ * 
+ */
 #define _USE_MATH_DEFINES
 #include <GL/glut.h>  // GLUT, include glu.h and gl.h
 #include <cmath>
