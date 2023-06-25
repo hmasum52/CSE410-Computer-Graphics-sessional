@@ -66,9 +66,6 @@ GLdouble radius = 0.0;
 // object rotation
 GLfloat objAngle = 0.0f;
 
-// camera movement
-bool isCameraMoving = false;
-
 /* Draw axes: X in Red, Y in Green and Z in Blue */
 void drawAxes() {
     glLineWidth(3);
@@ -340,11 +337,6 @@ void display() {
 
 
     //camera control
-    if(isCameraMoving)
-        gluLookAt(eye.x,eye.y,eye.z,
-            0, 0, 0,
-            up.x,up.y,up.z);
-    else
     gluLookAt(eye.x,eye.y,eye.z,
             eye.x + look.x ,eye.y + look.y,eye.z + look.z,
             up.x,up.y,up.z);
@@ -386,7 +378,6 @@ void reshapeListener(GLsizei width, GLsizei height) {  // GLsizei for non-negati
 /* Callback handler for normal-key event */
 void keyboardListener(unsigned char key, int x, int y) {
     double rate = 0.01;
-    isCameraMoving = false;
 	switch(key){
 		case '1': // rotate/look right
 			r.x = r.x*cos(rate)+look.x*sin(rate);
@@ -462,15 +453,12 @@ void keyboardListener(unsigned char key, int x, int y) {
     case 'w':
         eye.y += 0.1;
         look.y -= 0.1;
-        isCameraMoving = true;
         break;
     // s - move down without changing reference point
     case 's':
         eye.y -= 0.1;
         look.y += 0.1;
-        isCameraMoving = true;
         break;
-
     
     case '.':
         radius -= 0.045;
