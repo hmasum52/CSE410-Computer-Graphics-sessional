@@ -269,7 +269,7 @@ void drawSphere(){
     }glPopMatrix();
 }
 
-void drawCylinder(double height, double radius, int segments) {
+void drawCylinderSegment(double height, double radius, int segments) {
     double tempx = radius, tempy = 0;
     double currx, curry;
     glBegin(GL_QUADS);
@@ -306,7 +306,7 @@ void drawAllCylinder(){
             //drawCylinderInXZPlane();
             glTranslated(r/2, 0, r/2);
             glRotated(-45, 0, 1, 0);
-            drawCylinder(h, radius, 100);
+            drawCylinderSegment(h, radius, 100);
 
         }glPopMatrix();
     }
@@ -319,7 +319,7 @@ void drawAllCylinder(){
             glColor3f(1, 0, 0);
             glTranslated(0, r/2, r/2);
             glRotated(45, 1, 0, 0);
-            drawCylinder(h, radius, 100);
+            drawCylinderSegment(h, radius, 100);
         }glPopMatrix();
     }
 
@@ -332,7 +332,7 @@ void drawAllCylinder(){
             glColor3f(1, 0, 0);
             glTranslated(0, -r/2, r/2);
             glRotated(-45, 1, 0, 0);
-            drawCylinder(h, radius, 100);
+            drawCylinderSegment(h, radius, 100);
         }glPopMatrix();
     }
    

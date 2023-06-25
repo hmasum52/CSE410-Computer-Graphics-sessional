@@ -52,12 +52,13 @@ void initGL() {
 
 // Global variables
 const GLfloat DEFAULT_ZOOM = 2.3;
-bool isPyramid = true; //false;
 
-Point3D eye;       // camera position
-Point3D look;    // camera looks at
-Point3D r;     // right vector for camera
-Point3D up;        // up direction for camera
+
+// camera parameters
+Point3D eye;        // camera position
+Point3D look;       // camera looks at
+Point3D r;          // right vector for camera
+Point3D up;         // up direction for camera
 
 // sphere parameters
 GLdouble radius = 0.0;
@@ -251,7 +252,7 @@ void drawSphere(){
 
 }
 
-void drawCylinder(double height, double radius, int segments) {
+void drawCylinderSegment(double height, double radius, int segments) {
     const float cylinderAngle = 70.53f;
     const float cylinderHeight = height;
     const float cylinderRadius = radius;
@@ -287,7 +288,7 @@ void drawAllCylinder(){
             //drawCylinderInXZPlane();
             glTranslated(r/2, 0, r/2);
             glRotated(-45, 0, 1, 0);
-            drawCylinder(h, radius, 100);
+            drawCylinderSegment(h, radius, 100);
 
         }glPopMatrix();
     }
@@ -302,7 +303,7 @@ void drawAllCylinder(){
             glRotated(45, 1, 0, 0);
 
             glRotated(90, 0, 0, 1);
-            drawCylinder(h, radius, 100);
+            drawCylinderSegment(h, radius, 100);
         }glPopMatrix();
     }
     
@@ -315,7 +316,7 @@ void drawAllCylinder(){
             glRotated(-45, 1, 0, 0);
 
             glRotated(-90, 0, 0, 1);
-            drawCylinder(h, radius, 100);
+            drawCylinderSegment(h, radius, 100);
         }glPopMatrix();
     }
 
@@ -354,10 +355,10 @@ void display() {
         //if(isCameraMoving) glTranslatef(0, 1, 0);
         glRotatef(objAngle, 0, 1, 0);
 
-        drawAxes();
-        if (isPyramid) drawAllCylinder();
-        if (isPyramid) drawOctaHedron();
-        if (isPyramid) drawSphere();
+        //drawAxes();
+        drawAllCylinder();
+        drawOctaHedron();
+        drawSphere();
     }glPopMatrix();
 
     glutSwapBuffers();  // Render now

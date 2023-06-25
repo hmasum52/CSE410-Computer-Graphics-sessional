@@ -234,7 +234,7 @@ void drawSphere(){
 
 }
 
-void drawCylinder(double height, double radius, int segments) {
+void drawCylinderSegment(double height, double radius, int segments) {
     const float cylinderAngle = 70.53f;
     const float cylinderHeight = height;
     const float cylinderRadius = radius;
@@ -270,7 +270,7 @@ void drawAllCylinder(){
             //drawCylinderInXZPlane();
             glTranslated(r/2, 0, r/2);
             glRotated(-45, 0, 1, 0);
-            drawCylinder(h, radius, 100);
+            drawCylinderSegment(h, radius, 100);
 
         }glPopMatrix();
     }
@@ -285,7 +285,7 @@ void drawAllCylinder(){
             glRotated(45, 1, 0, 0);
 
             glRotated(90, 0, 0, 1);
-            drawCylinder(h, radius, 100);
+            drawCylinderSegment(h, radius, 100);
         }glPopMatrix();
     }
     
@@ -298,7 +298,7 @@ void drawAllCylinder(){
             glRotated(-45, 1, 0, 0);
 
             glRotated(-90, 0, 0, 1);
-            drawCylinder(h, radius, 100);
+            drawCylinderSegment(h, radius, 100);
         }glPopMatrix();
     }
 
