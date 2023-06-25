@@ -6,6 +6,18 @@
 
 // macro for converting degrees to radians
 #define DEG2RAD(x) (x * M_PI / 180.0f)
+// RGB to float color conversion
+#define RGBTOGL(r, g, b) (r / 255.0f), (g / 255.0f), (b / 255.0f)
+//#define CLOCK_COLOR glColor3f(RGBTOGL(111, 196, 208))
+#define CLOCK_COLOR glColor3f(RGBTOGL(24, 187, 253))
+
+class Point2D {
+public:
+    Point2D() : x(0.0), y(0.0) {}
+    Point2D(float x, float y) : x(x), y(y) {}
+
+    float x, y;
+};
 
 class Color {
 public:
@@ -27,15 +39,19 @@ public:
 const int windowWidth = 800;
 const int windowHeight = 800;
 
+
+// clock parameters
 const float clockRadius = 0.4;
-const float hourHandLength = 0.1;
-const float minuteHandLength = 0.2;
+const float hourHandLength = 0.08;
+const float minuteHandLength = 0.15;
 const float secondHandLength = 0.3;
 
+// pendulum parameters
 const float pendulumLength = 0.4;
 const float pendulumPeriod = 2.0;  // Pendulum period in seconds
 const int timerInterval = 10;  // Timer interval in milliseconds
 
+// pendulum physics parameters
 // https://tinyurl.com/pendulumeqn
 float elapshedTime = 0.0f;          // Current time
 const float theta_max = DEG2RAD(15.0f);  // Maximum angle
@@ -92,15 +108,22 @@ void drawFilledCircle(float centerX, float centerY, float radius) {
     glEnd();
 }
 
+void drawLine(Point2D from, Point2D to, 
+            GLfloat width=1.0, Color color = Color::white()) {
+    glLineWidth(width);
+    glColor3f(color.r, color.g, color.b);
+    glBegin(GL_LINES);{
+        glVertex2f(from.x, from.y);
+        glVertex2f(to.x, to.y);
+    }glEnd();
+}
+
 void drawMinuteTicks(){
-    
-   
         // draw all 60 ticks
         for (int i = 0; i < 60; ++i) {
-            float angle = i * (2.0 * M_PI / 60);
-            float x = (clockRadius - 0.05) * cos(angle);
-            float y = (clockRadius - 0.05) * sin(angle);
-            
+            float angle = i * (2.0 * M_PI / 60); // angle in radians
+            float x = (clockRadius - 0.06) * cos(angle);
+            float y = (clockRadius - 0.06) * sin(angle);
 
             if(i%5 == 0) {
                 // draw the longer tick
@@ -121,13 +144,13 @@ void drawMinuteTicks(){
                     glVertex2f(x2, y2);
                 }glEnd();
             }
-        
         }
 }
 
 void drawClockFace() {
     // draw the outside design
     glLineWidth(5.0);
+    CLOCK_COLOR;
     glBegin(GL_LINE_LOOP);{
     for (int i = 0; i < 12; ++i) {
         float angle = i * (2.0 * M_PI / 12);
@@ -142,6 +165,7 @@ void drawClockFace() {
 
     // draw the numbers
     glPushMatrix();{
+        glColor3f(0.0, 0.0, 0.0);
         glRotated(90, 0, 0, 1);
         glTranslated(-0.01, 0.019, 0.0);  
         //drawAxis();
@@ -162,7 +186,6 @@ void drawClockFace() {
             }
         }
     }glPopMatrix();
-    
 
     // draw minute ticks
     glPushMatrix();{
@@ -172,33 +195,61 @@ void drawClockFace() {
     }glPopMatrix();
 }
 
-void drawHand(float angle, Color c, float width, float length) {
-    glColor3f(c.r, c.g, c.b);
-    glLineWidth(width);
-    glPushMatrix();
-        glBegin(GL_LINES);
-            glVertex2f(0.0, 0.0);
-            float x = length * cos(angle);
-            float y = length * sin(angle);
-            glVertex2f(x, y);
-        glEnd();
-    glPopMatrix();
+void drawHand(float angle, float length, float scale) {
+    glPushMatrix();{
+        glBegin(GL_POLYGON);{
+            float s = scale;
+            float x1 = s * cos(angle + M_PI/2);
+            float y1 = s * sin(angle + M_PI/2);
+
+            float x2 = s * cos(angle - M_PI/2);
+            float y2 =  s * sin(angle - M_PI/2);
+
+            float t = length;
+            float x3 = x2 + t*cos(angle - M_PI/36);
+            float y3 = y2 + t*sin(angle - M_PI/36);
+
+            float x4 = x1 + t*cos(angle + M_PI/36);
+            float y4 = y1 + t*sin(angle + M_PI/36);
+
+            // color black
+            glVertex2f(x1, y1);
+            glVertex2f(x2, y2);
+            glVertex2f(x3, y3);
+            glVertex2f(0.2 * cos(angle), 0.2 * sin(angle));
+            glVertex2f(x4, y4);
+        };glEnd();
+    }glPopMatrix();
 }
 
 void drawHourHand(float angle) {
-    drawHand(angle, Color::blue(), 5.0, hourHandLength);
+    CLOCK_COLOR;
+    drawHand(angle, hourHandLength, 0.005);
 }
 
 void drawMinuteHand(float angle) {
-    drawHand(angle, Color::green(), 3.0, minuteHandLength);
+    CLOCK_COLOR;
+    drawHand(angle, minuteHandLength, 0.005);
 }
 
 void drawSecondHand(float angle) {
-    drawHand(angle, Color::red(), 1.0, secondHandLength);
+    glColor3f(0.0, 0.0, 0.0);
+    //drawHand(angle, 1.0, secondHandLength);
+    glLineWidth(3.0);
+    glPushMatrix();{
+        //drawAxis();
+        glBegin(GL_LINES);
+            glVertex2f(0.0, 0.0);
+            float x = secondHandLength * cos(angle);
+            float y = secondHandLength * sin(angle);
+            glVertex2f(x, y);
+        glEnd();
+    }glPopMatrix();
 }
 
 
 void drawPendulumBox(){
+    CLOCK_COLOR;
     for(int i = 8; i<=10 ; i+=2){
         float angle = i * (2.0 * M_PI / 12);
         float x = clockRadius * cos(angle);
@@ -219,16 +270,13 @@ void drawPendulumBox(){
                 float yt = clockRadius * sin(angle_t) ;
                 glVertex2f(xt,yt-0.55);
             }glEnd();
-
         }glPopMatrix();
     }
-    
+    // black color
+    glColor3f(0.0, 0.0, 0.0);
 }
 
 void drawPendulum() {
-
-    //glColor3f(0.5, 0.5, 0.5);  // Gray color
-
     drawPendulumBox();
 
     float angle = 9 * (2.0 * M_PI / 12);
@@ -243,6 +291,9 @@ void drawPendulum() {
         float angle = theta_max * sin(w * elapshedTime); // Current angle
         float bobX = pendulumLength * sin(angle);
         float bobY = -pendulumLength * cos(angle);
+
+        // draw the pivot point
+        drawFilledCircle(0.0, 0.0, 0.025);
 
         glLineWidth(10.0);
         // draw the pendulum rod 
@@ -273,12 +324,9 @@ void display() {
     float minuteAngle = -(minute + second / 60.0) * (2.0 * M_PI / 60);
     float secondAngle = - second * (2.0 * M_PI / 60);
 
-    
 
     glPushMatrix();{
         glTranslatef(0, 0.5, 0);
-
-        
 
         // Draw the clock face
         drawClockFace();
@@ -290,8 +338,6 @@ void display() {
         drawHourHand(hourAngle);
         drawMinuteHand(minuteAngle);
         drawSecondHand(secondAngle);
-
-        
 
     }glPopMatrix();
 
@@ -322,6 +368,7 @@ int main(int argc, char** argv) {
     glutDisplayFunc(display);
     glutReshapeFunc(reshape);
     glutTimerFunc(timerInterval, timer, 0);
+    glClearColor(1.0f, 1.0f, 1.0f, 1.0f);   // white background
     glutMainLoop();
     return 0;
 }
