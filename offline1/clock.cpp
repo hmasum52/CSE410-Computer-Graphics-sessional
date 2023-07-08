@@ -241,7 +241,7 @@ void drawHourHand(float angle) {
 }
 
 void drawMinuteHand(float angle) {
-    CLOCK_COLOR;
+    glColor3f(0.0, 0.0, 0.0);
     drawHand(angle, minuteHandLength, 0.005);
 }
 
