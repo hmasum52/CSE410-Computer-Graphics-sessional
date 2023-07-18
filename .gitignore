@@ -1,2 +1,3 @@
 *.exe
 !offline1/cse410_offline1_sample_windows/*.exe
+!online1/online1_A2.exe
