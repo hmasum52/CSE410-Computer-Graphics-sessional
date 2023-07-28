@@ -1,3 +1,11 @@
+/**
+ * @file main.cpp(stage1, stage2, stage3)
+ * @author Hasan Masum (1805052@ugrad.cse.buet.ac.bd)
+ * @brief 
+ * @version 0.1
+ * 
+ * 
+ */
 #define _USE_MATH_DEFINES
 #include<bits/stdc++.h>
 #include "matrix.h"
