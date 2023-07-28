@@ -1,3 +1,7 @@
 *.exe
 !offline1/cse410_offline1_sample_windows/*.exe
 !online1/online1_A2.exe
+offline-2/1805052/scene.txt
+offline-2/1805052/stage1.txt
+offline-2/1805052/stage2.txt
+offline-2/1805052/stage3.txt
