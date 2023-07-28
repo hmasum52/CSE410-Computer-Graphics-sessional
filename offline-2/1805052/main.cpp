@@ -63,6 +63,28 @@ Matrix generateViewMatrix(Vector3D eye, Vector3D look, Vector3D up){
     return R * T;
 }
 
+//  The process of generating Projection matrix P
+Matrix generateProjectionMatrix(double fovY, double asepectRatio, double rear, double far){
+    // First compute the field of view along X (fovX) axis
+    double fovX = fovY * asepectRatio;
+
+    // then determine r and t
+    double t = rear * tan((fovY/2) * (M_PI/180));
+    double r = rear * tan((fovX/2) * (M_PI/180));
+
+    // make the projection matrix P
+    Matrix P; // zero matrix
+    P.cell[0][0] = rear/r; P.cell[1][1] = rear/t; P.cell[2][2] = -(far + rear)/(far - rear);
+    P.cell[2][3] = -(2*far*rear)/(far - rear); P.cell[3][2] = -1;
+    // matrix look like this
+    // [rear/r 0                    0                          0            ]
+    // [0      rear/t               0                          0            ]
+    // [0      0       -(far + rear)/(far - rear) -(2*far*rear)/(far - rear)]
+    // [0      0                   -1                          0            ]
+
+    return P;
+}
+
 
 
 int main(int argc, char* argv[]){
@@ -97,10 +119,18 @@ int main(int argc, char* argv[]){
     // initialize identity matrix M
     Matrix M = Matrix::identity();
 
-    // stage2: In the view transformation phase,
+    // Stage 2: View Transformation
+    // In the view transformation phase,
     // the gluLookAt parameters in scene.txt is used 
     // to generate the  view transformation matrix V
     Matrix V = generateViewMatrix(eye, look, up);
+
+    
+    // Stage 3: Projection Transformation
+    // In the projection transformation phase, 
+    // the gluPerspective parameters in scene.txt are used to 
+    // generate the projection transformation matrix P
+    Matrix P = generateProjectionMatrix(fovY, aspectRatio, near, far);
 
 
     string command;
@@ -112,8 +142,6 @@ int main(int argc, char* argv[]){
         // command switch statement
         if(command == "triangle"){
             //cout<<"triangle"<<endl;
-
-            
 
             // pseudocode:
             // for each three points
@@ -130,6 +158,11 @@ int main(int argc, char* argv[]){
             scene >> triangle.cell[0][0] >> triangle.cell[1][0] >> triangle.cell[2][0];
             scene >> triangle.cell[0][1] >> triangle.cell[1][1] >> triangle.cell[2][1];
             scene >> triangle.cell[0][2] >> triangle.cell[1][2] >> triangle.cell[2][2];
+            // traingle matrix now look like this
+            // [x1 x2 x3 1]
+            // [y1 y2 y3 1]
+            // [z1 z2 z3 1]
+            // [ 1  1  1 1]
 
             // =================== stage1 =====================
             // ============= Model Transformation =============
@@ -140,6 +173,13 @@ int main(int argc, char* argv[]){
             // save the coordinates in stage.txt file
             writeTraingleVertex(stage1, triangle);
 
+            // for example if we apply translation matrix T
+            // then the traingle matrix will look like this
+            // [1 0 0 Tx]   [x1 x2 x3 1]   [x1+Tx x2+Tx x3+Tx 1]
+            // [0 1 0 Ty]   [y1 y2 y3 1]   [y1+Ty y2+Ty y3+Ty 1]
+            // [0 0 1 Tz] * [z1 z2 z3 1]   [z1+Tz z2+Tz z3+Tz 1]
+            // [0 0 0  1]   [ 1  1  1 1]   [   1    1    1    1]
+
             // =================== stage2 =====================
             // ============= View Transformation ==============
             // ================================================
@@ -148,6 +188,15 @@ int main(int argc, char* argv[]){
             triangle = V*triangle;
             // save the coordinates in stage2.txt file
             writeTraingleVertex(stage2, triangle);
+
+            // =================== stage3 =====================
+            // ============= Projection Transformation ========
+            // ================================================
+
+            // apply projection transformation matrix
+            triangle = P*triangle;
+            // save the coordinates in stage3.txt file
+            writeTraingleVertex(stage3, triangle);
 
 
         }

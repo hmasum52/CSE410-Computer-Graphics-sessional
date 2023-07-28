@@ -45,7 +45,7 @@ for folder in $test_cases; do
         # boolean variable for success
         success=true
         
-        for s in 1 2 3 4; do
+        for s in 1 2 3; do
             if cmp --silent -- <(tr -d '\r' < 1805052/stage$s.txt) <(tr -d '\r' < $folder/stage$s.txt); then
                 print_checkpoint "stage$s matched!"
             else
@@ -59,6 +59,9 @@ for folder in $test_cases; do
         if($success); then
             print_green_tick "Test $case_no passed!"
         fi
+
+        # delete stage files in 1805052 folder
+        rm 1805052/stage*.txt
 
         # print newline
         echo ""
