@@ -2,7 +2,6 @@
 #include<bits/stdc++.h>
 #include "matrix.h"
 #include "vector3d.h"
-#include "stack.h"
 using namespace std;
 
 // macro for setting width and precision
@@ -36,6 +35,34 @@ void writeTraingleVertex(ostream &os, const Matrix triangle){
     os<<endl;
 }
 
+// In the view transformation phase, the gluLookAt 
+// parameters in scene.txt is used to generate the 
+// view transformation matrix V, and the points in stage1.txt 
+// are transformed by V and written in  stage2.txt. 
+// generate view matrix V
+// e: eye vector
+// l: look vector
+// u: up vector
+Matrix generateViewMatrix(Vector3D eye, Vector3D look, Vector3D up){
+    Vector3D l = (look - eye); l.normalize();
+    Vector3D r = l.cross(up); r.normalize();
+    Vector3D u = r.cross(l); 
+
+    // Apply the following translation T to move the eye/camera to origin
+    Matrix T = Matrix::identity();
+    T.cell[0][3] = -eye.x; T.cell[1][3] = -eye.y; T.cell[2][3] = -eye.z;
+
+    // Apply the following rotation R to align the camera with the world axes
+    // that is aligning l with the -Z axis, r with X axis, and u with Y axis.
+    Matrix R = Matrix::identity();
+    R.cell[0][0] = +r.x; R.cell[0][1] = +r.y; R.cell[0][2] = +r.z;
+    R.cell[1][0] = +u.x; R.cell[1][1] = +u.y; R.cell[1][2] = +u.z;
+    R.cell[2][0] = -l.x; R.cell[2][1] = -l.y; R.cell[2][2] = -l.z;
+
+    // view transformation matrix V = R * T
+    return R * T;
+}
+
 
 
 int main(int argc, char* argv[]){
@@ -48,18 +75,16 @@ int main(int argc, char* argv[]){
     Vector3D eye, look, up;
     scene >> eye >> look >> up;
 
-    cout<<"eye: "<<eye<<endl;
-    cout<<"look: "<<look<<endl;
-    cout<<"up: "<<up<<endl;
+    cout<<"eye: "<<eye<<", "<<"look: "<<look<<", "<<"up: "<<up<<endl;
     
     //Line 4 provides the gluPerspective parameters
     double fovY, aspectRatio, near, far;
     scene >> fovY >> aspectRatio >> near >> far;  
 
-    cout<<"fovY: "<<fovY<<endl;
-    cout<<"aspectRatio: "<<aspectRatio<<endl;
-    cout<<"near: "<<near<<endl;
-    cout<<"far: "<<far<<endl;
+    cout << "fovY: " << fovY << ", "
+            << "aspectRatio: " << aspectRatio << ", "
+            << "near: " << near << ", "
+            << "far: " << far << std::endl;
 
     // open output files
     fstream stage1 = open_file("stage1.txt", ios_base::out);
@@ -72,8 +97,12 @@ int main(int argc, char* argv[]){
     // initialize identity matrix M
     Matrix M = Matrix::identity();
 
-    // read from scence file
-    cout<<"reading commands"<<endl;
+    // stage2: In the view transformation phase,
+    // the gluLookAt parameters in scene.txt is used 
+    // to generate the  view transformation matrix V
+    Matrix V = generateViewMatrix(eye, look, up);
+
+
     string command;
     while(true){
         // read command
@@ -83,6 +112,8 @@ int main(int argc, char* argv[]){
         // command switch statement
         if(command == "triangle"){
             //cout<<"triangle"<<endl;
+
+            
 
             // pseudocode:
             // for each three points
@@ -100,11 +131,24 @@ int main(int argc, char* argv[]){
             scene >> triangle.cell[0][1] >> triangle.cell[1][1] >> triangle.cell[2][1];
             scene >> triangle.cell[0][2] >> triangle.cell[1][2] >> triangle.cell[2][2];
 
+            // =================== stage1 =====================
+            // ============= Model Transformation =============
+            // ================================================
+
             // apply transformation matrix
             triangle = M * triangle;
-
             // save the coordinates in stage.txt file
-            writeTraingleVertex(stage1, triangle);            
+            writeTraingleVertex(stage1, triangle);
+
+            // =================== stage2 =====================
+            // ============= View Transformation ==============
+            // ================================================
+
+            // apply view transformation matrix
+            triangle = V*triangle;
+            // save the coordinates in stage2.txt file
+            writeTraingleVertex(stage2, triangle);
+
 
         }
         else if(command == "translate"){

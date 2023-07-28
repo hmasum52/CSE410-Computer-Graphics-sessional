@@ -41,16 +41,24 @@ for folder in $test_cases; do
         g++ main.cpp -o main && ./main ../$folder/scene.txt
         rm ./main
         cd ..
-        if cmp --silent -- <(tr -d '\r' < 1805052/stage1.txt) <(tr -d '\r' < $folder/stage1.txt); then
-            print_checkpoint "stage1 matched!"
-        else
-            echo "files differ"
-            # diff <(tr -d '\r' <1805052/stage1.txt) <(tr -d '\r' < $folder/stage1.txt)
-            print_red_cross "Test $case_no failed on stage1"
-            coninue
-        fi  
 
-        print_green_tick "Test $case_no passed!"
+        # boolean variable for success
+        success=true
+        
+        for s in 1 2 3 4; do
+            if cmp --silent -- <(tr -d '\r' < 1805052/stage$s.txt) <(tr -d '\r' < $folder/stage$s.txt); then
+                print_checkpoint "stage$s matched!"
+            else
+                # diff <(tr -d '\r' <1805052/stage1.txt) <(tr -d '\r' < $folder/stage1.txt)
+                print_red_cross "Test $case_no failed on stage$s"
+                success=false
+                break
+            fi 
+        done
+
+        if($success); then
+            print_green_tick "Test $case_no passed!"
+        fi
 
         # print newline
         echo ""
