@@ -105,16 +105,16 @@ int main(int argc, char* argv[]){
     Vector3D eye, look, up;
     scene >> eye >> look >> up;
 
-    cout<<"eye: "<<eye<<", "<<"look: "<<look<<", "<<"up: "<<up<<endl;
+    //cout<<"eye: "<<eye<<", "<<"look: "<<look<<", "<<"up: "<<up<<endl;
     
     //Line 4 provides the gluPerspective parameters
     double fovY, aspectRatio, near, far;
     scene >> fovY >> aspectRatio >> near >> far;  
 
-    cout << "fovY: " << fovY << ", "
+    /* cout << "fovY: " << fovY << ", "
             << "aspectRatio: " << aspectRatio << ", "
             << "near: " << near << ", "
-            << "far: " << far << std::endl;
+            << "far: " << far << std::endl; */
 
     // open output files
     fstream stage1 = open_file("stage1.txt", ios_base::out);
