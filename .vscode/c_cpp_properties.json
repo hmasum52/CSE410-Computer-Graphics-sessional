@@ -10,7 +10,7 @@
                 "UNICODE",
                 "_UNICODE"
             ],
-            "compilerPath": "D:\\\\msys2\\\\mingw64\\\\bin\\\\g++.exe"
+            "compilerPath": "D:\\myprograms\\mingw-gcc\\mingw64-opengl\\bin\\g++.exe"
         }
     ],
     "version": 4
