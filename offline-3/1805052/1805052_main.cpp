@@ -6,19 +6,22 @@
 #include <iostream>
 #include <vector>
 #include <tuple>
-#include "vector3d.h"
+#include "1805052_vector3d.h"
 #include "1805052_util.h"
 #include "1805052_color.h"
 #include "1805052_object.h"
+#include "bitmap_image.hpp"
 using namespace std;
 
 // macro for degree to radian conversion
 #define DEG2RAD(deg) (deg * M_PI / 180)
 #define MOVE_RATE 4
 #define ROTATE_UNIT 3*(M_PI/180)
+#define INF 1e9
+#define fori(i, n) for(int i = 0; i<n; i++)
 
 // inputs from descripton.txt
-double nearPlane, farPlane; // distances of near and far planes
+double nearDist, farDist; // distances of near and far planes
 double fovY;                // field of vision along y axis
 double aspectRatio;         // aspect ratio of the view window
 int nRecurstion;            // recursion level of ray tracing
@@ -52,6 +55,7 @@ double viewAngle = 80;
 double angle;
 double windowWidth = 700;
 double windowHeight = 700;
+vector<vector<Vector3D>> pointBuffer;
 
 Vector3D eye; 
 Vector3D u, r, l;
@@ -91,6 +95,94 @@ void drawAxes() {
 }
 
 
+
+void initPointBuffer(){
+  // the objects in the real world will be mapped in 
+  // screen with
+  double height = 2*nearDist*tan(fovY/2);
+  double fovX = aspectRatio*fovY;
+  double width = 2*nearDist*tan(fovX/2);
+
+  // middle point of the screen
+  Vector3D midpoint = eye + l*nearDist; 
+
+  // as now we have the mid point 
+  // we use camera r and camera u vector to generate
+  // 3d points on the screen
+  double stepX = width / nPixels;
+  double stepY = height / nPixels;
+
+  pointBuffer.resize(nPixels, std::vector<Vector3D>(nPixels));
+
+  for (int y = 0; y < nPixels; y++) {
+      for (int x = 0; x < nPixels; x++) {
+          double xOffset = -width / 2 + x * stepX;
+          double yOffset = height / 2 - y * stepY;
+          Vector3D pointOnNearPlane = midpoint + r * xOffset - u * yOffset;
+          pointBuffer[x][y] = pointOnNearPlane;
+      }
+  }
+}
+
+// cast ray
+void captureBitmapImage(){
+  cout<<"capturing bitmap image"<<endl;
+  cout<< "init point buffer"<<endl;
+  initPointBuffer();
+  cout<<"point buffer init done"<<endl;
+
+  // init bitmap image
+  bitmap_image image(nPixels, nPixels);
+  for(int i = 0; i<nPixels; i++) for(int j = 0; j<nPixels; j++) image.set_pixel(i, j, 0, 0, 0); // set black
+  cout<<"image init done"<<endl;
+  
+
+  for(int i = 0; i<pointBuffer.size(); i++){
+    for(int j = 0; j<pointBuffer[i].size(); j++){
+      Vector3D pointOnNearPlane = pointBuffer[i][j];
+      Vector3D rayDir = pointOnNearPlane - eye;
+    
+      // Do not start from the rays from the eye
+      // rather, start from the point on the near plane
+      // if we start from the eye, we will have to do extra checks to implement the near plane
+      // if you start from the point on the near plane, then we only have to 
+      // check that thte parameter t > 0
+      Ray ray = Ray(pointOnNearPlane, rayDir);
+
+      // iterate all object to get the nearest hit point
+      double tMin = INF;
+      Object *nearestObject = nullptr;
+      for(auto o: objects){
+        // find intersecting point
+        double t = o->intersect(ray);
+        if(t>0 && t<tMin){
+          tMin = t;
+          nearestObject = o;
+        }
+      }
+
+      if(nearestObject!=nullptr){
+        Color pixelColor(0, 0, 0);
+        tMin = nearestObject->intersectAndIlluminate(ray, pixelColor, 1);
+
+        //cout<<"pixel color: "<<pixelColor<<endl;
+
+        image.set_pixel(i, j, 255*pixelColor.r, 255*pixelColor.g, 255*pixelColor.b);
+      }else{
+        // no object is intersected
+        // set background color
+        image.set_pixel(i, j, 0, 0, 0);
+      }
+
+    }
+  }
+
+  cout<<"image capture done"<<endl;
+  cout<<"saving image"<<endl;
+  image.save_image("out.bmp");
+  cout<<"image saved at out.bmp"<<endl;
+}
+
 /* Handler for window re-size event. Called back when the window first appears and
    whenever the window is re-sized with its new width and height */
 void reshapeListener(GLsizei width, GLsizei height) {  // GLsizei for non-negative integer
@@ -107,13 +199,16 @@ void reshapeListener(GLsizei width, GLsizei height) {  // GLsizei for non-negati
 
     // Enable perspective projection with fovy, aspect, zNear and zFar
     // for 3D view
-    gluPerspective(fovY, aspectRatio, nearPlane, farPlane);
+    gluPerspective(fovY, aspectRatio, nearDist, farDist);
 }
 
 /* Callback handler for normal-key event */
 void keyboardListener(unsigned char key, int x, int y) {
     double rate = ROTATE_UNIT;
 	switch(key){
+    case '0': // caputre bitmap image
+      captureBitmapImage();
+      break;
 		case '1': // rotate/look right
 			r.x = r.x*cos(rate)+l.x*sin(rate);
 			r.y = r.y*cos(rate)+l.y*sin(rate);
@@ -240,7 +335,7 @@ void readDescription(){
   // read distanse of near and far plane
   // fov along y axis
   // aspect ratio
-  scene>>nearPlane>>farPlane>>fovY>>aspectRatio;
+  scene>>nearDist>>farDist>>fovY>>aspectRatio;
 
   // level of recursion
   scene>>nRecurstion;
@@ -252,8 +347,8 @@ void readDescription(){
   scene>>cellWidth;
   // ambient, diffuse and reflection coefficient
   scene>>cofAmbient>>cofDiffuse>>cofReflection;
-  checkerBoard = CheckerBoard(farPlane, cellWidth);
-  objects.push_back(new CheckerBoard(farPlane, cellWidth));
+  checkerBoard = CheckerBoard(farDist, cellWidth);
+  objects.push_back(new CheckerBoard(farDist, cellWidth));
 
   // number of objects
   scene>>nObjects;

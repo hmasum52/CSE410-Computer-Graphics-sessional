@@ -7,9 +7,12 @@
 #include <GL/glut.h>
 #include <fstream>
 #include <cmath>
-#include "vector3d.h"
+#include "1805052_vector3d.h"
 #include "1805052_color.h"
+#include "1805052_ray.h"
 using namespace std;
+
+#define INF 1e9
 
 
 class Object{
@@ -59,24 +62,38 @@ public:
 
 
     virtual void draw() = 0;
+
+    // return the intersection point of the ray with the object
+    double intersect(Ray ray){
+        return intersectAndIlluminate(ray, color, 0); // color is not used
+    }
+
+    Color getColor(Vector3D intersectionPoint){
+        return Color(0, 0, 0);
+    }
+
+    virtual double intersectAndIlluminate(Ray ray, Color& color, int level) = 0;
+    /* {
+        return INF;
+    } */
 };
 
 
 class CheckerBoard : public Object{
-    Vector3D center;  // center of the board
+    Vector3D topLeft;  // center of the board
     int nTile; // number of tiles in each row/column
     double wTile; // width of each tile
 
 public:
     CheckerBoard(){
-        center = Vector3D(0, 0, 0);
+        topLeft = Vector3D(0, 0, 0);
         wTile = 0;
         nTile = 0;
     }
 
     // constructor with board width and number of tiles
     CheckerBoard(double wCheckerboard, double wTile){
-        center = Vector3D(-wCheckerboard/2, -wCheckerboard/2, 0);
+        topLeft = Vector3D(-wCheckerboard/2, -wCheckerboard/2, 0);
         this->wTile = wTile;
         nTile = (int) wCheckerboard / wTile;
     }
@@ -86,8 +103,8 @@ public:
         glBegin(GL_QUADS);{
             for(int i=0; i<nTile; i++){
                 for(int j=0; j<nTile; j++){
-                    x = center.x + i*wTile;
-                    y = center.y + j*wTile;
+                    x = topLeft.x + i*wTile;
+                    y = topLeft.y + j*wTile;
 
                     int color = (i+j)%2 == 0 ? 1 : 0;
                     glColor3f(color, color, color);
@@ -99,6 +116,53 @@ public:
                 }
             }
         }glEnd();
+    }
+
+    Vector3D normal(Ray incidentRay){
+        return Vector3D(0, 0, incidentRay.dir.z > 0 ? 1 : -1);
+    }
+
+    // color at point p
+    Color getColor(Vector3D p){
+        int i = (p.x - topLeft.x) / wTile;
+        int j = (p.y - topLeft.y) / wTile;
+        int color = (i+j)%2 == 0 ? 1 : 0;
+        return Color(color, color, color);
+    }
+
+    // find intersection point of the ray with the board
+    double intersectAndIlluminate(Ray ray, Color& color, int level){
+        // get normal
+        Vector3D n = normal(ray);
+
+        // check if perpendicular to the plane
+        double denom = n.dot(ray.dir);
+        if(denom == 0){
+            return INF;
+        }
+
+        // find the intersection point
+        double t = - (n.dot(ray.origin)) / denom; // distance from origin
+        Vector3D intersectionPoint = ray.origin + ray.dir*t;
+
+        // check if the intersection point is inside the board
+        if(intersectionPoint.x < topLeft.x || intersectionPoint.x > -topLeft.x){
+            return INF;
+        }
+
+        if(intersectionPoint.y < topLeft.y || intersectionPoint.y > -topLeft.y){
+            return INF;
+        }
+
+        if(level == 0){
+            return t;
+        }
+
+        // illuminate the intersection point
+       // color = illuminate(intersectionPoint, n, ray.dir);
+        color = getColor(intersectionPoint);
+
+        return t;
     }
 
 };
@@ -123,6 +187,57 @@ public:
             glColor3f(color.r, color.g, color.b);
             glutSolidSphere(radius, 100, 100);
         }glPopMatrix();
+    }
+
+    // find intersection point of the ray with the sphere
+    double intersectAndIlluminate(Ray ray, Color& color, int level){
+        // P(t) = origin + t*dir
+        // H(p) = P*P - r*r = 0
+        // R0 = origin - center
+        // => dir.dir*t^2 + 2*dir.R0*t + R0.R0 - r*r = 0
+        // a = dir*dir
+        // b = 2*dir.R0
+        // c = R0*R0 - r*r
+        
+        Vector3D intersectionPoint;
+        Vector3D origin = ray.origin;
+        Vector3D dir = ray.dir;
+
+        // calculate the coefficients of the quadratic equation
+        double a = dir.dot(dir); // dir.dir
+        double b = 2 * dir.dot(origin - center); // 2*dir.R0
+        double c = (origin - center).dot(origin - center) - radius*radius; // R0.R0 - r*r
+
+        // calculate the discriminant
+        double discriminant = b*b - 4*a*c;
+
+        // if discriminant is negative, no intersection
+        if(discriminant < 0){
+            return INF;
+        }
+
+        double tMin = INF; // distance of the closest intersection point
+
+        // if discriminant is zero, one intersection
+        if(discriminant == 0){
+            tMin = -b / (2*a);
+        }
+        // if discriminant is positive, two intersections
+        else{
+            double t1 = (-b + sqrt(discriminant)) / (2*a);
+            double t2 = (-b - sqrt(discriminant)) / (2*a);
+            tMin = min(t1, t2);
+        }
+        
+        if (level == 0){
+            return tMin;
+        }
+
+        intersectionPoint = origin + dir*tMin;
+       // color = illuminate(intersectionPoint, normal(intersectionPoint), dir);
+        color = this->color;
+
+        return tMin;
     }
 
     friend ostream& operator>>(istream& os, Sphere& c){
@@ -188,6 +303,11 @@ public:
                 }glEnd();
             }glPopMatrix();
         }glPopMatrix();
+    }
+
+    // find intersection point of the ray with the cube
+    double intersectAndIlluminate(Ray ray, Color& color, int level){
+        return INF;
     }
 
     friend istream& operator>>(istream& is, Pyramid& c){
@@ -259,6 +379,15 @@ public:
     }
 
 
+    // find intersection point of the ray with the cube
+    double intersectAndIlluminate(Ray ray, Color& color, int level){
+        // P(t) = origin + t*dir
+        // need to check if Ray intersects with the cube
+        // if it intersects, then find the intersection point
+        // and illuminate it
+
+        return INF;
+    }
 
 
     friend istream& operator>>(istream& is, Cube& c){
