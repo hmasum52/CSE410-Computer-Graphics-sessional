@@ -256,6 +256,122 @@ class Pyramid : public Object{
     double height;
     double width;
 
+
+    // This implementation uses the Möller–Trumbore intersection algorithm 
+    // to determine if a ray intersects with a triangle. 
+    bool intersectTriangle(const Ray& ray, Vector3D& v0, Vector3D& v1, Vector3D& v2,double& t) {
+        Vector3D edge1 = v1 - v0;
+        Vector3D edge2 = v2 - v0;
+        Vector3D rayOrigin = ray.origin;
+        Vector3D rayDir = ray.dir;
+
+        Vector3D h = rayDir.cross(edge2);
+        double a = edge1.dot(h);
+
+        // epsilon value is used for numerical stability and to handle cases where the ray is very close to the triangle.
+        const double epsilon = 1e-5;
+
+        if (a > -epsilon && a < epsilon) {
+            return false; // Ray is parallel to the triangle
+        }
+
+        double f = 1.0 / a;
+        Vector3D s = rayOrigin - v0;
+        double u = f * s.dot(h);
+
+        if (u < 0.0 || u > 1.0) {
+            return false;
+        }
+
+        Vector3D q = s.cross(edge1);
+        double v = f * rayDir.dot(q);
+
+        if (v < 0.0 || u + v > 1.0) {
+            return false;
+        }
+
+        t = f * edge2.dot(q);
+
+        if (t > epsilon) {
+            return true; // Ray intersection
+        }
+
+        return false;
+    }
+
+    /*
+    In this implementation, I'm assuming the square is aligned with the XY plane and centered at the 
+    given center point. The function first calculates the plane equation of the square's 
+    plane and finds the intersection parameter t. 
+    Then, it checks if the intersection point lies within the bounds of the square.
+    */
+    bool intersectRaySquare(const Ray& ray, double& t) {
+        double halfSide = width / 2.0;
+        Vector3D normal(0, 0, 1); // Assuming the square lies in the XY plane
+        Vector3D rayOrigin = ray.origin;
+        Vector3D rayDir = ray.dir;
+
+        // Calculate the plane's distance from the origin
+        double d = -normal.dot(lowestPoint); // negative because the normal points in the opposite direction
+
+        double denominator = normal.dot(rayDir);
+        
+        if (denominator == 0) {
+            // Ray is parallel to the plane
+            return false;
+        }
+
+        t = -(normal.dot(rayOrigin) + d) / denominator;
+
+        if (t < 0) {
+            // Intersection behind the ray's origin
+            return false;
+        }
+
+        Vector3D intersectionPoint = rayOrigin + rayDir * t;
+
+        // Check if the intersection point is within the square's bounds
+        double xDist = fabs(intersectionPoint.x - lowestPoint.x);
+        double yDist = fabs(intersectionPoint.y - lowestPoint.y);
+
+        if (xDist > halfSide || yDist > halfSide) {
+            return false;
+        }
+
+        return true;
+    }
+
+
+    bool intersectRayPyramid(const Ray& ray, Vector3D& intersectionPoint, double& distance) {
+        Vector3D rayOrigin = ray.origin;
+        Vector3D rayDir = ray.dir;
+        Vector3D v0 = lowestPoint;
+        Vector3D v1 = lowestPoint + Vector3D(width, 0, 0);
+        Vector3D v2 = lowestPoint + Vector3D(width, width, 0);
+        Vector3D v3 = lowestPoint + Vector3D(0, width, 0);
+        vector<Vector3D> vertices = { v0, v1, v2, v3 };
+        Vector3D apex = lowestPoint + Vector3D(width / 2, width / 2, height);
+
+
+
+        // Check for intersection with the pyramid's base
+        double t;
+        bool intersected = intersectRaySquare(ray, t);
+
+        // Check for intersection with each triangular face
+        for (int i = 0; i < 4; i++) {
+            Vector3D v0 = vertices[i];
+            Vector3D v1 = vertices[(i + 1) % 4];
+            Vector3D v2 = apex;
+            
+            if(intersectTriangle(ray, v0, v1, v2, t)) {
+                intersected = true;
+                distance = t;
+            }
+        }
+
+        return intersected;
+    }
 public:
 
     Pyramid(){
@@ -307,6 +423,20 @@ public:
 
     // find intersection point of the ray with the cube
     double intersectAndIlluminate(Ray ray, Color& color, int level){
+        
+        Vector3D intersectionPoint;
+        double tMin = INF;
+
+        if(intersectRayPyramid(ray, intersectionPoint, tMin)){
+            if(level == 0){
+                return tMin;
+            }
+            // illuminate the intersection point
+            //color = illuminate(intersectionPoint, normal(intersectionPoint), ray.dir);
+            color = this->color;
+            return tMin;
+        }
+
         return INF;
     }
 

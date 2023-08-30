@@ -49,10 +49,6 @@ Vector3D spotLightDir;      // direction of the spot light source(point to which
 double cutOffAngle;         // cut off angle in degree
 
 // opengl parameters
-double cameraHeight;
-double cameraAngle;
-double viewAngle = 80;
-double angle;
 double windowWidth = 700;
 double windowHeight = 700;
 vector<vector<Vector3D>> pointBuffer;
@@ -61,11 +57,8 @@ Vector3D eye;
 Vector3D u, r, l;
 
 void init(){
-	//codes for initialization
-	cameraHeight=80.0;
-	cameraAngle=1.0;
-	angle=0;
-
+  windowHeight = windowWidth = nPixels;
+  
 	eye = { 0, -150, 64 };
 	u = { 0, 0, 1 }; // up vector
 	r = { 1, 0, 0 }; // right vector
@@ -75,7 +68,7 @@ void init(){
 /* Draw axes: X in Red, Y in Green and Z in Blue */
 void drawAxes() {
     glLineWidth(3);
-    int length = cameraHeight*2;
+    int length = nPixels*2;
     glBegin(GL_LINES);
         glColor3f(1,0,0);   // Red
         // X axis
@@ -427,11 +420,7 @@ void display(){
   glLoadIdentity();
 
    // cross multiplication between (l-eye) and u
-    r.x = (l.y)*u.z - (l.z)*u.y;
-    r.y = (l.z)*u.x - (l.x)*u.z;
-    r.z = (l.x)*u.y - (l.y)*u.x;
-
-
+  r = l.cross(u);
 
   // set the camera
   gluLookAt(
