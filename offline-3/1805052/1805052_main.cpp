@@ -118,7 +118,7 @@ void initPointBuffer(){
       for (int x = 0; x < nPixels; x++) {
           double xOffset = -width / 2 + x * stepX;
           double yOffset = height / 2 - y * stepY;
-          Vector3D pointOnNearPlane = midpoint + r * xOffset - u * yOffset;
+          Vector3D pointOnNearPlane = midpoint - r * xOffset - u * yOffset;
           pointBuffer[x][y] = pointOnNearPlane;
       }
   }
