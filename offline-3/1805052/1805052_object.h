@@ -379,12 +379,84 @@ public:
     }
 
 
+    bool intersectRayCube(const Ray& ray, Vector3D& intersectionPoint, double& distance) {
+        Vector3D p = this->bottomLeft - ray.origin;
+        double tMin = (p.x) / ray.dir.x;
+        double tMax = (p.x + this->side) / ray.dir.x;
+
+        if (tMin > tMax) {
+            swap(tMin, tMax);
+        }
+
+        double tyMin = (p.y) / ray.dir.y;
+        double tyMax = (p.y + this->side) / ray.dir.y;
+
+        if (tyMin > tyMax) {
+            swap(tyMin, tyMax);
+        }
+
+        if ((tMin > tyMax) || (tyMin > tMax)) {
+            return false;
+        }
+
+        /* if (tyMin > tMin) {
+            tMin = tyMin;
+            
+        }
+        if (tyMax < tMax) {
+            tMax = tyMax;
+        } */
+        tMin = max (tMin, tyMin);
+        tMax = min (tMax, tyMax);
+        
+
+        double tzMin = (p.z) / ray.dir.z;
+        double tzMax = (p.z + this->side) / ray.dir.z;
+
+        if (tzMin > tzMax) {
+            std::swap(tzMin, tzMax);
+        }
+
+        if ((tMin > tzMax) || (tzMin > tMax)) {
+            return false;
+        }
+
+        if (tzMin > tMin) {
+            tMin = tzMin;
+        }
+
+        if (tzMax < tMax) {
+            tMax = tzMax;
+        }
+        tMin = max(tMin, tzMin);
+        tMax = min(tMax, tzMax);
+
+        if (tMin < 0 || tMax < tMin) {
+            return false;
+        }
+
+        Vector3D origin = ray.origin;
+        Vector3D dir = ray.dir;
+        intersectionPoint = origin + dir * tMin;
+        distance = tMin;
+        return true;
+    }
+
     // find intersection point of the ray with the cube
     double intersectAndIlluminate(Ray ray, Color& color, int level){
-        // P(t) = origin + t*dir
-        // need to check if Ray intersects with the cube
-        // if it intersects, then find the intersection point
-        // and illuminate it
+        double tMin = INF;
+
+        Vector3D intersectionPoint;
+        
+        if(intersectRayCube(ray, intersectionPoint, tMin)){
+            if(level == 0){
+                return tMin;
+            }
+            // illuminate the intersection point
+            //color = illuminate(intersectionPoint, normal(intersectionPoint), ray.dir);
+            color = this->color;
+            return tMin;
+        }
 
         return INF;
     }
