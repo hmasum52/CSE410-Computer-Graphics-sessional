@@ -15,6 +15,10 @@ using namespace std;
 #define INF 1e9
 
 
+/* extern vector<Object*> objects;
+extern vector<NormalLight*> lights;
+extern vector<SpotLight*> spotLights */;
+
 class Object{
 protected:
     string name;
@@ -56,7 +60,19 @@ public:
         this->reflection = recursive;
     }
 
+    void applyNormalLights(double& intensity, Vector3D normal, Vector3D incidentRay){
+        intensity = intensity + diffuse * max(0.0, normal.dot(incidentRay));
+    }
 
+    // illuminate 
+    virtual Color illuminate(Vector3D p, Vector3D normal, Vector3D incidentRay){
+        Color c(0, 0, 0);
+
+        // ambient
+        c = c + getColor(p) * ambient;
+
+        return c;
+    }
 
 
     virtual void draw() = 0;
@@ -66,9 +82,10 @@ public:
         return intersectAndIlluminate(ray, color, 0); // color is not used
     }
 
-    Color getColor(Vector3D intersectionPoint){
-        return Color(0, 0, 0);
-    }
+    virtual Color getColor(Vector3D intersectionPoint) =  0;
+
+    // normal at a point
+    virtual Vector3D normal(Vector3D intersectionPoint) = 0;
 
     virtual double intersectAndIlluminate(Ray ray, Color& color, int level) = 0;
 };
@@ -117,6 +134,10 @@ public:
         return Vector3D(0, 0, incidentRay.dir.z > 0 ? 1 : -1);
     }
 
+    Vector3D normal(Vector3D intersectionPoint){
+        return Vector3D(0, 0, 1);
+    }
+
     // color at point p
     Color getColor(Vector3D p){
         int i = (p.x - topLeft.x) / wTile;
@@ -153,9 +174,8 @@ public:
             return t;
         }
 
-        // illuminate the intersection point
-       // color = illuminate(intersectionPoint, n, ray.dir);
-        color = getColor(intersectionPoint);
+        color = illuminate(intersectionPoint, n, ray.dir);
+        //color = getColor(intersectionPoint);
 
         return t;
     }
@@ -182,6 +202,16 @@ public:
             glColor3f(color.r, color.g, color.b);
             glutSolidSphere(radius, 100, 100);
         }glPopMatrix();
+    }
+
+    // get the normal
+    Vector3D normal(Vector3D intersectionPoint){
+        return (intersectionPoint - center).normalize();
+    }
+
+    // get color at an intersecting point
+    Color getColor(Vector3D intersectionPoint){
+        return color;
     }
 
     // find intersection point of the ray with the sphere
@@ -229,8 +259,8 @@ public:
         }
 
         intersectionPoint = origin + dir*tMin;
-       // color = illuminate(intersectionPoint, normal(intersectionPoint), dir);
-        color = this->color;
+        color = illuminate(intersectionPoint, normal(intersectionPoint), dir);
+        //color = this->color;
 
         return tMin;
     }
@@ -416,6 +446,43 @@ public:
         }glPopMatrix();
     }
 
+    // normal at a point
+    Vector3D normal(Vector3D intersectionPoint){
+        Vector3D n(0, 0, 0);
+        if(intersectionPoint.z == lowestPoint.z){
+            n = Vector3D(0, 0, -1);
+        }
+        else if(intersectionPoint.z == lowestPoint.z + height){
+            n = Vector3D(0, 0, 1);
+        }
+        else{
+            Vector3D v0 = lowestPoint;
+            Vector3D v1 = lowestPoint + Vector3D(width, 0, 0);
+            Vector3D v2 = lowestPoint + Vector3D(width, width, 0);
+            Vector3D v3 = lowestPoint + Vector3D(0, width, 0);
+            vector<Vector3D> vertices = { v0, v1, v2, v3 };
+            Vector3D apex = lowestPoint + Vector3D(width / 2, width / 2, height);
+
+            for (int i = 0; i < 4; i++) {
+                Vector3D v0 = vertices[i];
+                Vector3D v1 = vertices[(i + 1) % 4];
+                Vector3D v2 = apex;
+
+                Vector3D edge1 = v1 - v0;
+                Vector3D edge2 = v2 - v0;
+                n = edge1.cross(edge2);
+                if (n.dot(intersectionPoint - v0) > 0) {
+                    break;
+                }
+            }
+        }
+        return n;
+    }
+
+    Color getColor(Vector3D intersectionPoint){
+        return color;
+    }
+
     // find intersection point of the ray with the cube
     double intersectAndIlluminate(Ray ray, Color& color, int level){
         
@@ -427,8 +494,8 @@ public:
                 return tMin;
             }
             // illuminate the intersection point
-            //color = illuminate(intersectionPoint, normal(intersectionPoint), ray.dir);
-            color = this->color;
+            color = illuminate(intersectionPoint, normal(intersectionPoint), ray.dir);
+            //color = this->color;
             return tMin;
         }
 
@@ -567,6 +634,34 @@ public:
         return true;
     }
 
+    // get the normal
+    Vector3D normal(Vector3D intersectionPoint){
+        Vector3D n(0, 0, 0);
+        if(intersectionPoint.x == bottomLeft.x){
+            n = Vector3D(-1, 0, 0);
+        }
+        else if(intersectionPoint.x == bottomLeft.x + side){
+            n = Vector3D(1, 0, 0);
+        }
+        else if(intersectionPoint.y == bottomLeft.y){
+            n = Vector3D(0, -1, 0);
+        }
+        else if(intersectionPoint.y == bottomLeft.y + side){
+            n = Vector3D(0, 1, 0);
+        }
+        else if(intersectionPoint.z == bottomLeft.z){
+            n = Vector3D(0, 0, -1);
+        }
+        else if(intersectionPoint.z == bottomLeft.z + side){
+            n = Vector3D(0, 0, 1);
+        }
+        return n;
+    }
+
+    Color getColor(Vector3D intersectionPoint){
+        return color;
+    }
+
     // find intersection point of the ray with the cube
     double intersectAndIlluminate(Ray ray, Color& color, int level){
         double tMin = INF;
@@ -578,8 +673,8 @@ public:
                 return tMin;
             }
             // illuminate the intersection point
-            //color = illuminate(intersectionPoint, normal(intersectionPoint), ray.dir);
-            color = this->color;
+            color = illuminate(intersectionPoint, normal(intersectionPoint), ray.dir);
+            //color = this->color;
             return tMin;
         }
 

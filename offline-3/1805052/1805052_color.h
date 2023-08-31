@@ -16,6 +16,21 @@ class Color{
         this->r = r;this->g = g;this->b = b;
     }
 
+    // override + operator
+    Color operator+(const Color& c){
+        return Color(r + c.r, g + c.g, b + c.b);
+    }
+
+    // override * operator
+    Color operator*(double s){
+        return Color(r * s, g * s, b * s);
+    }
+
+    // override == 
+    bool operator==(const Color& c){
+        return r == c.r && g == c.g && b == c.b;
+    }
+
     friend ostream& operator<<(ostream& os, const Color& c){
         os<<"("<<c.r<<","<<c.g<<","<<c.b<<")";
         return os;

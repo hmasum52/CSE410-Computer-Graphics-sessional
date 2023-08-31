@@ -343,7 +343,9 @@ void readDescription(){
   scene>>cellWidth;
   // ambient, diffuse and reflection coefficient
   scene>>cofAmbient>>cofDiffuse>>cofReflection;
-  objects.push_back(new CheckerBoard(farDist, cellWidth));
+  CheckerBoard* checkerBoard = new CheckerBoard(farDist, cellWidth);
+  checkerBoard->setLightCoefficients(cofAmbient, cofDiffuse, cofReflection, 0);
+  objects.push_back(checkerBoard);
 
   // number of objects
   scene>>nObjects;

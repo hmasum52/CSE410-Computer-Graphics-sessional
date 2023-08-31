@@ -76,9 +76,10 @@ public:
     }
 
     // normalize vector
-    void normalize(){
+    Vector3D normalize(){
         double len = sqrt(x * x + y * y + z * z);
         x /= len; y /= len; z /= len;
+        return *this;
     }
 
     // distance between two vectors
