@@ -32,24 +32,6 @@ double cofAmbient;             // ambient coefficient
 double cofDiffuse;             // diffuse coefficient
 double cofReflection;          // reflection coefficient
 int nObjects;                  // number of objects in the scene
-// ---
-// object desction
-CheckerBoard checkerBoard;  // checker board
-vector<Object*> objects;    // objects in the scene
-// ---
-// light source description
-int nLightSources;          // number of light sources
-Vector3D lightSource;       // position of the light source
-double srcfalloff;             // falloff factor
-vector<NormalLight*> lights; // light sources in the scene
-// ---
-// spot light source description
-int nSpotLightSources;      // number of spot light sources
-Vector3D spotLightSource;   // position of the spot light source
-double spotLightFallOff;       // falloff factor
-Vector3D spotLightDir;      // direction of the spot light source(point to which it is looking)
-double cutOffAngle;         // cut off angle in degree
-vector<SpotLight*> spotLights; // spot light sources in the scene
 
 // opengl parameters
 double windowWidth = 700;
@@ -344,7 +326,7 @@ void readDescription(){
   // ambient, diffuse and reflection coefficient
   scene>>cofAmbient>>cofDiffuse>>cofReflection;
   CheckerBoard* checkerBoard = new CheckerBoard(farDist, cellWidth);
-  checkerBoard->setLightCoefficients(cofAmbient, cofDiffuse, cofReflection, 0);
+  checkerBoard->setLightCoefficients(cofAmbient, cofDiffuse, 0, cofReflection);
   objects.push_back(checkerBoard);
 
   // number of objects
@@ -375,6 +357,7 @@ void readDescription(){
   }
 
   // read light source description
+  int nLightSources, nSpotLightSources;
   scene>>nLightSources;
   for (int i = 0; i < nLightSources; i++){
     NormalLight* light = new NormalLight();
@@ -417,8 +400,6 @@ void display(){
     drawAxes();
     //checkerBoard.draw();
     for(auto o : objects){
-      //if(o->getName() == "pyramid")
-      //  o->draw();
       o->draw();
     }
     // draw the normal light sources

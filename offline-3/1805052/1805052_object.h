@@ -7,17 +7,14 @@
 #include <GL/glut.h>
 #include <fstream>
 #include <cmath>
+#include <vector>
 #include "1805052_vector3d.h"
 #include "1805052_color.h"
 #include "1805052_ray.h"
+#include "1805052_light.h"
 using namespace std;
 
 #define INF 1e9
-
-
-/* extern vector<Object*> objects;
-extern vector<NormalLight*> lights;
-extern vector<SpotLight*> spotLights */;
 
 class Object{
 protected:
@@ -65,15 +62,20 @@ public:
     }
 
     // illuminate 
-    virtual Color illuminate(Vector3D p, Vector3D normal, Vector3D incidentRay){
+    Color illuminate(Vector3D p, Vector3D normal, Vector3D incidentRay){
         Color c(0, 0, 0);
 
         // ambient
-        c = c + getColor(p) * ambient;
+        c = c + getColor(p) *ambient;
+
+        // diffuse
+        applyDiffuseAndSpecularReflection(c, p, normal, incidentRay);
 
         return c;
     }
 
+    // apply diffuse and specular reflection
+    void applyDiffuseAndSpecularReflection(Color &c, Vector3D p, Vector3D normal, Vector3D incidentRay);
 
     virtual void draw() = 0;
 
@@ -89,6 +91,7 @@ public:
 
     virtual double intersectAndIlluminate(Ray ray, Color& color, int level) = 0;
 };
+
 
 
 class CheckerBoard : public Object{
@@ -130,9 +133,7 @@ public:
         }glEnd();
     }
 
-    Vector3D normal(Ray incidentRay){
-        return Vector3D(0, 0, incidentRay.dir.z > 0 ? 1 : -1);
-    }
+
 
     Vector3D normal(Vector3D intersectionPoint){
         return Vector3D(0, 0, 1);
@@ -149,7 +150,7 @@ public:
     // find intersection point of the ray with the board
     double intersectAndIlluminate(Ray ray, Color& color, int level){
         // get normal
-        Vector3D n = normal(ray);
+        Vector3D n = Vector3D(0, 0, 1);
 
         // check if perpendicular to the plane
         double denom = n.dot(ray.dir);
@@ -635,7 +636,7 @@ public:
     }
 
     // get the normal
-    Vector3D normal(Vector3D intersectionPoint){
+    Vector3D normal1(Vector3D intersectionPoint){
         Vector3D n(0, 0, 0);
         if(intersectionPoint.x == bottomLeft.x){
             n = Vector3D(-1, 0, 0);
@@ -658,6 +659,32 @@ public:
         return n;
     }
 
+
+    Vector3D normal(Vector3D intersectionPoint){
+        Vector3D n(0, 0, 0);
+        const double epsilon = 0.001; // Adjust epsilon based on your scene's scale
+
+        if (abs(intersectionPoint.x - bottomLeft.x) < epsilon) {
+            n = Vector3D(-1, 0, 0);
+        }
+        else if (abs(intersectionPoint.x - (bottomLeft.x + side)) < epsilon) {
+            n = Vector3D(1, 0, 0);
+        }
+        else if (abs(intersectionPoint.y - bottomLeft.y) < epsilon) {
+            n = Vector3D(0, -1, 0);
+        }
+        else if (abs(intersectionPoint.y - (bottomLeft.y + side)) < epsilon) {
+            n = Vector3D(0, 1, 0);
+        }
+        else if (abs(intersectionPoint.z - bottomLeft.z) < epsilon) {
+            n = Vector3D(0, 0, -1);
+        }
+        else if (abs(intersectionPoint.z - (bottomLeft.z + side)) < epsilon) {
+            n = Vector3D(0, 0, 1);
+        }
+        return n;
+    }
+    
     Color getColor(Vector3D intersectionPoint){
         return color;
     }
@@ -693,3 +720,92 @@ public:
         return is;
     }
 };
+
+
+// ---
+vector<Object*> objects;    // objects in the scene
+// ---
+// light source description      // falloff factor
+vector<NormalLight*> lights; // light sources in the scene
+// ---
+// spot light source description
+vector<SpotLight*> spotLights; // spot light sources in the scene
+
+void getNearestIntersectionPoint(Ray ray, double& tMin, Object*& nearestObject){
+    tMin = INF;
+    for(int i=0; i<objects.size(); i++){
+        double t = objects[i]->intersect(ray);
+        if(t < tMin){
+            tMin = t;
+            nearestObject = objects[i];
+        }
+    }
+}
+
+void Object::applyDiffuseAndSpecularReflection(
+    Color &c, 
+    Vector3D p, // intersection point
+    Vector3D normal, 
+    Vector3D incidentRay){
+    /*
+    lambert = phong = 0
+    For all sources S:
+        if S does not illuminate intersecting point P: continue
+        vector toSource = PS;
+        toSource.normalize();
+        N = normal at intersecting point P
+        N.normalize();
+        distance = distance between intersecting point P and source S 
+        scaling_factor = exp(-distance*distance*S.falloff);
+        lambert += toSource.dot(N)*scaling_factor;
+        R’ = reflected ray at point P (use N here as well) [here,
+        original ray is starting from camera, not from source]
+        R’.normalize()
+        phong += pow( R’.dot(toSource), shininess)*scaling_factor
+
+    Diffuse component is found as: d*lambert *red, d*lambert*green, d* lambert*blue
+    Specular component is found as: s*phong *red, s* phong *green, s* phong *blue
+    */
+
+    double lambert = 0, phong = 0;
+
+    for(int i=0; i<lights.size(); i++){
+        // check if the light source illuminates the point
+        // make a ray from light to the point
+        Ray lightRay(lights[i]->position, p - lights[i]->position);
+        double tMin = INF;
+        Object* nearestObject = NULL;
+        getNearestIntersectionPoint(lightRay, tMin, nearestObject);
+        
+        // if the light source does not illuminate the point, continue
+        if(nearestObject != NULL && nearestObject != this){
+            continue;
+        }
+
+        // vector to source
+        Vector3D toSource = lights[i]->position - p;
+        toSource.normalize();
+
+        // distance between intersecting point and source
+        double distance = (lights[i]->position - p).magnitude();
+
+        // scaling factor
+        double scalingFactor = exp(-distance*distance*lights[i]->falloff);
+
+        // lambert
+        lambert += max(toSource.dot(normal), 0.0) * scalingFactor;
+
+        // reflected ray
+        Vector3D reflectedRay = incidentRay - normal * 2 * incidentRay.dot(normal);
+        reflectedRay.normalize();
+
+        // phong
+        phong += pow(max(reflectedRay.dot(toSource), 0.0), shininess) * scalingFactor;
+    }
+
+    // diffuse component
+    c = c + getColor(p) * diffuse * lambert;
+
+    // specular component
+    c = c + Color(1,1,1) * specular * phong;
+}

@@ -21,11 +21,10 @@ public:
 
 
 class NormalLight{
-protected:
+public:
     Vector3D position;
     // falllout after every recursion
-    double fallout; // 1.0 for no fallout
-public:
+    double falloff; // 1.0 for no fallout
 
   void draw(){
     glPushMatrix();
@@ -40,17 +39,17 @@ public:
 
   // friend function to read light from istream
   friend istream& operator>>(istream& in, NormalLight& light){
-    in >> light.position >> light.fallout;
+    in >> light.position >> light.falloff;
     cout<<"Normal Light position: "<<light.position<<endl;
     return in;
   }
 };
 
 class SpotLight:NormalLight {
-private:
-    Vector3D direction;
-    double cutOffAngle; // in radian
 public:
+    Vector3D direction;
+    double cutOffAngle; // in radians
+    
   // draw a cone 
   void draw(){
     // drawa the spot light as a cone in
@@ -75,7 +74,7 @@ public:
 
   // friend function to read light from istream
   friend istream& operator>>(istream& in, SpotLight& light){
-    in >> light.position >> light.fallout >> light.direction >> light.cutOffAngle;
+    in >> light.position >> light.falloff >> light.direction >> light.cutOffAngle;
     light.direction.normalize();
     DEG2RAD(light.cutOffAngle);
     cout<<"Spot Light position: "<<light.position<<endl;
