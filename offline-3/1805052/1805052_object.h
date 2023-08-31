@@ -17,11 +17,8 @@ using namespace std;
 
 class Object{
 protected:
-    // double height;
-    // double width;
-    // double length;
     string name;
-    double lightCoefficients[4]; // ambient, diffuse, specular, recursive
+    double ambient, diffuse, specular, reflection; // light coefficients
     int shininess; // exponent of specular reflection
 
 public:
@@ -30,14 +27,13 @@ public:
     // default constructor
     Object(){
         name = "";
-       // height = width = length = 0;
-        lightCoefficients[0] = lightCoefficients[1] = lightCoefficients[2] = lightCoefficients[3] = 0;
+        ambient = diffuse = specular = reflection = 0;
         shininess = 0;
     }
 
     Object(string name){
         this->name = name;
-        lightCoefficients[0] = lightCoefficients[1] = lightCoefficients[2] = lightCoefficients[3] = 0;
+        ambient = diffuse = specular = reflection = 0;
         shininess = 0;
     }
 
@@ -54,11 +50,13 @@ public:
     }
 
     void setLightCoefficients(double ambient, double diffuse, double specular, double recursive){
-        lightCoefficients[0] = ambient;
-        lightCoefficients[1] = diffuse;
-        lightCoefficients[2] = specular;
-        lightCoefficients[3] = recursive;
+        this->ambient = ambient;
+        this->diffuse = diffuse;
+        this->specular = specular;
+        this->reflection = recursive;
     }
+
+
 
 
     virtual void draw() = 0;
@@ -73,9 +71,6 @@ public:
     }
 
     virtual double intersectAndIlluminate(Ray ray, Color& color, int level) = 0;
-    /* {
-        return INF;
-    } */
 };
 
 

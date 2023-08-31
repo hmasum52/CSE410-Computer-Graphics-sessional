@@ -11,6 +11,7 @@
 #include "1805052_color.h"
 #include "1805052_object.h"
 #include "bitmap_image.hpp"
+#include "1805052_light.h"
 using namespace std;
 
 // macro for degree to radian conversion
@@ -40,6 +41,7 @@ vector<Object*> objects;    // objects in the scene
 int nLightSources;          // number of light sources
 Vector3D lightSource;       // position of the light source
 double srcfalloff;             // falloff factor
+vector<NormalLight*> lights; // light sources in the scene
 // ---
 // spot light source description
 int nSpotLightSources;      // number of spot light sources
@@ -47,6 +49,7 @@ Vector3D spotLightSource;   // position of the spot light source
 double spotLightFallOff;       // falloff factor
 Vector3D spotLightDir;      // direction of the spot light source(point to which it is looking)
 double cutOffAngle;         // cut off angle in degree
+vector<SpotLight*> spotLights; // spot light sources in the scene
 
 // opengl parameters
 double windowWidth = 700;
@@ -59,7 +62,7 @@ Vector3D u, r, l;
 void init(){
   windowHeight = windowWidth = nPixels;
   
-	eye = { 0, -150, 64 };
+	eye = { 0, -150, 50 };
 	u = { 0, 0, 1 }; // up vector
 	r = { 1, 0, 0 }; // right vector
 	l = { 0, 1,  0 }; // look vector
@@ -340,7 +343,6 @@ void readDescription(){
   scene>>cellWidth;
   // ambient, diffuse and reflection coefficient
   scene>>cofAmbient>>cofDiffuse>>cofReflection;
-  checkerBoard = CheckerBoard(farDist, cellWidth);
   objects.push_back(new CheckerBoard(farDist, cellWidth));
 
   // number of objects
@@ -351,36 +353,15 @@ void readDescription(){
     scene>>shape;
     cout<<"shape: "<<shape<<endl;
     if(shape == "sphere"){
-      // Vector3D center;
-      // scene>>center.x>>center.y>>center.z;
-      // double radius; scene >> radius;
-      // Color color; scene >> color.r >> color.g >> color.b;
-      // double ambient, diffuse,specular, reflection; 
-      // scene >> ambient >> diffuse>> specular >> reflection;
-      // double shininess; scene >> shininess;
       Sphere* s = new Sphere();
       scene>>*s;
       objects.push_back(s);
     
     }else if(shape == "pyramid"){
-      // Vector3D lowestPoint;
-      // scene>>lowestPoint.x>>lowestPoint.y>>lowestPoint.z;
-      // double width, height; scene >> width >> height;
-      // Color color; scene >> color.r >> color.g >> color.b;
-      // double ambient, diffuse,specular, reflection;
-      // scene >> ambient >> diffuse>> specular >> reflection;
-      // double shininess; scene >> shininess;
       Pyramid* p = new Pyramid(shape);
       scene>>*p;
       objects.push_back(p);
     }else if(shape == "cube"){
-      /* Vector3D bottomLeft;
-      scene>>bottomLeft.x>>bottomLeft.y>>bottomLeft.z;
-      double side; scene >> side; cout<<side<<endl;
-      Color color; scene >> color.r >> color.g >> color.b;
-      double ambient, diffuse,specular, reflection;
-      scene >> ambient >> diffuse>> specular >> reflection;
-      double shininess; scene >> shininess; */
       Cube* c = new Cube(shape);
       scene>>*c;
       objects.push_back(c);
@@ -394,17 +375,17 @@ void readDescription(){
   // read light source description
   scene>>nLightSources;
   for (int i = 0; i < nLightSources; i++){
-    scene>>lightSource.x>>lightSource.y>>lightSource.z;
-    scene>>srcfalloff;
+    NormalLight* light = new NormalLight();
+    scene>>*light;
+    lights.push_back(light);
   }
 
   // read spot light source description
   scene>>nSpotLightSources;
   for (int i = 0; i < nSpotLightSources; i++){
-    scene>>spotLightSource.x>>spotLightSource.y>>spotLightSource.z;
-    scene>>spotLightFallOff;
-    scene>>spotLightDir.x>>spotLightDir.y>>spotLightDir.z;
-    scene>>cutOffAngle;
+    SpotLight* light = new SpotLight();
+    scene>>*light;
+    spotLights.push_back(light);
   }
 
 }
@@ -437,6 +418,15 @@ void display(){
       //if(o->getName() == "pyramid")
       //  o->draw();
       o->draw();
+    }
+    // draw the normal light sources
+    for(auto light: lights){
+      light->draw();
+    }
+
+    // draw the spot light sources
+    for(auto light: spotLights){
+      light->draw();
     }
   }
   glPopMatrix();

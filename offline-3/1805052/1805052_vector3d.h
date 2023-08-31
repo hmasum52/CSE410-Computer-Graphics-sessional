@@ -62,6 +62,10 @@ public:
         return x * v.x + y * v.y + z * v.z;
     }
 
+    double magnitude(){
+        return sqrt(x * x + y * y + z * z);
+    }
+
     // cross product
     Vector3D cross(const Vector3D& v){
         return Vector3D(
@@ -83,7 +87,7 @@ public:
     }
 
     // angle between two vectors
-    double angle(const Vector3D& v){
+    double angleWith(const Vector3D& v){
         return acos(this->dot(v) / (sqrt(x * x + y * y + z * z) * sqrt(v.x * v.x + v.y * v.y + v.z * v.z)));
     }
 
