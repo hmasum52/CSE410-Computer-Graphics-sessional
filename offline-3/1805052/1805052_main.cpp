@@ -46,6 +46,83 @@ void init(){
 	l = { 0, 1,  0 }; // look vector
 }
 
+
+// read description from "description.txt"
+void readDescriptionFile(){
+  fstream scene = open_file("description.txt", ios_base::in);
+  objects.clear();
+  lights.clear();
+  spotLights.clear();
+
+  // read distanse of near and far plane
+  // fov along y axis
+  // aspect ratio
+  scene>>nearDist>>farDist>>fovY>>aspectRatio;
+
+  // level of recursion
+  scene>>nRecurstion;
+  // number of pixel in along both axis
+  scene>>nPixels;
+
+
+  // width of each cell of the infinite checkerboard
+  int cellWidth;
+  scene>>cellWidth;
+  // ambient, diffuse and reflection coefficient
+  double cofAmbient, cofDiffuse, cofReflection;
+  scene>>cofAmbient>>cofDiffuse>>cofReflection;
+  checkerBoard = new CheckerBoard(farDist*2, cellWidth);
+  checkerBoard->setLightCoefficients(cofAmbient, cofDiffuse, 0, cofReflection);
+  checkerBoard->setShininess(30);
+  objects.push_back(checkerBoard);
+
+  // number of objects
+  int nObjects;
+  scene>>nObjects;
+
+  for (int i = 0; i < nObjects; i++){
+    string shape; // shape of the object
+    scene>>shape;
+    //cout<<"shape: "<<shape<<endl;
+    if(shape == "sphere"){
+      Sphere* s = new Sphere();
+      scene>>*s;
+      objects.push_back(s);
+    
+    }else if(shape == "pyramid"){
+      Pyramid* p = new Pyramid(shape);
+      scene>>*p;
+      objects.push_back(p);
+    }else if(shape == "cube"){
+      Cube* c = new Cube(shape);
+      scene>>*c;
+      objects.push_back(c);
+    }else{
+      cout<<"unknown shape: "<<shape<<endl;
+      exit(1);
+    }
+  }
+
+  // read light source description
+  int nLightSources, nSpotLightSources;
+  scene>>nLightSources;
+  for (int i = 0; i < nLightSources; i++){
+    NormalLight* light = new NormalLight();
+    scene>>*light;
+    lights.push_back(light);
+  }
+
+  // read spot light source description
+  scene>>nSpotLightSources;
+  for (int i = 0; i < nSpotLightSources; i++){
+    SpotLight* light = new SpotLight();
+    scene>>*light;
+    spotLights.push_back(light);
+  }
+
+}
+
+
 /* Draw axes: X in Red, Y in Green and Z in Blue */
 void drawAxes() {
     glLineWidth(3);
@@ -234,6 +311,31 @@ void keyboardListener(unsigned char key, int x, int y) {
       checkerBoard->toggleTexture();
       break;
 
+    case 'r':
+    case 'R':
+      // turn off reflection
+      cout<<"Reflection mode toggled"<<endl;
+      for(auto o: objects){
+        o->toggleReflectionEnabled();
+      }
+      break;
+    case 's':
+    case 'S':
+      // toggle spot light
+      cout<<"Spot light mode toggled"<<endl;
+      for(auto o: objects){
+        o->toggleSpotLightEnabled();
+      }
+      break;
+    case 'n':
+    case 'N':
+      // toggle normal light
+      cout<<"Normal light mode toggled"<<endl;
+      for(auto o: objects){
+        o->toggleNormalLightEnabled();
+      }
+      break;
+
     // Control exit
     case 27:    // ESC key
         exit(0);    // Exit window
@@ -264,82 +366,13 @@ void specialKeyListener(int key, int x,int y) {
 		case GLUT_KEY_PAGE_DOWN:
       eye = eye - u * rate;
 			break;
+    case GLUT_KEY_INSERT:
+        readDescriptionFile();
+        break;
     default:
         return;
     }
     glutPostRedisplay();    // Post a paint request to activate display()
-}
-
-// read description from "description.txt"
-void readDescriptionFile(){
-  fstream scene = open_file("description.txt", ios_base::in);
-
-  // read distanse of near and far plane
-  // fov along y axis
-  // aspect ratio
-  scene>>nearDist>>farDist>>fovY>>aspectRatio;
-
-  // level of recursion
-  scene>>nRecurstion;
-  // number of pixel in along both axis
-  scene>>nPixels;
-
-
-  // width of each cell of the infinite checkerboard
-  int cellWidth;
-  scene>>cellWidth;
-  // ambient, diffuse and reflection coefficient
-  double cofAmbient, cofDiffuse, cofReflection;
-  scene>>cofAmbient>>cofDiffuse>>cofReflection;
-  checkerBoard = new CheckerBoard(farDist*2, cellWidth);
-  checkerBoard->setLightCoefficients(cofAmbient, cofDiffuse, 0, cofReflection);
-  checkerBoard->setShininess(30);
-  objects.push_back(checkerBoard);
-
-  // number of objects
-  int nObjects;
-  scene>>nObjects;
-
-  for (int i = 0; i < nObjects; i++){
-    string shape; // shape of the object
-    scene>>shape;
-    //cout<<"shape: "<<shape<<endl;
-    if(shape == "sphere"){
-      Sphere* s = new Sphere();
-      scene>>*s;
-      objects.push_back(s);
-    
-    }else if(shape == "pyramid"){
-      Pyramid* p = new Pyramid(shape);
-      scene>>*p;
-      objects.push_back(p);
-    }else if(shape == "cube"){
-      Cube* c = new Cube(shape);
-      scene>>*c;
-      objects.push_back(c);
-    }else{
-      cout<<"unknown shape: "<<shape<<endl;
-      exit(1);
-    }
-  }
-
-  // read light source description
-  int nLightSources, nSpotLightSources;
-  scene>>nLightSources;
-  for (int i = 0; i < nLightSources; i++){
-    NormalLight* light = new NormalLight();
-    scene>>*light;
-    lights.push_back(light);
-  }
-
-  // read spot light source description
-  scene>>nSpotLightSources;
-  for (int i = 0; i < nSpotLightSources; i++){
-    SpotLight* light = new SpotLight();
-    scene>>*light;
-    spotLights.push_back(light);
-  }
-
 }
 
 void display(){

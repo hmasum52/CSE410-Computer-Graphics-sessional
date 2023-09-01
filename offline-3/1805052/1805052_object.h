@@ -22,7 +22,10 @@ protected:
     string name;
     double ambient, diffuse, specular, reflection; // light coefficients
     int shininess; // exponent of specular reflection
-
+    bool reflectionEnabled = true;
+    bool spotLightEnabled = true;
+    bool normalLightEnabled = true;
+    bool ambientLightEnabled = true;
 public:
     Color color; // default color is black
 
@@ -62,6 +65,19 @@ public:
         this->reflection = recursive;
     }
 
+    void toggleReflectionEnabled(){
+        reflectionEnabled = !reflectionEnabled;
+    }
+
+    void toggleSpotLightEnabled(){
+        spotLightEnabled = !spotLightEnabled;
+    }
+
+
+    void toggleNormalLightEnabled(){
+        normalLightEnabled = !normalLightEnabled;
+    }
+
     void applyNormalLights(double& intensity, Vector3D normal, Vector3D incidentRay){
         intensity = intensity + diffuse * max(0.0, normal.dot(incidentRay));
     }
@@ -77,7 +93,9 @@ public:
         applyNormalAndSpotLigts(c, p, normal, incidentRay, level);
 
         // reflection
-        applyReflection(c, p, normal, incidentRay, level);
+        if(reflectionEnabled){
+            applyReflection(c, p, normal, incidentRay, level);
+        }
 
         return c;
     }
@@ -440,12 +458,12 @@ class Pyramid : public Object{
     */
     bool intersectRaySquare(const Ray& ray, double& t) {
         double halfSide = width / 2.0;
-        Vector3D normal(0, 0, 1); // Assuming the square lies in the XY plane
+        Vector3D normal(0, 0, -1); // Assuming the square lies in the XY plane
         Vector3D rayOrigin = ray.origin;
         Vector3D rayDir = ray.dir;
 
         // Calculate the plane's distance from the origin
-        double d = -normal.dot(lowestPoint); // negative because the normal points in the opposite direction
+        double d = normal.dot(lowestPoint); // negative because the normal points in the opposite direction
 
         double denominator = normal.dot(rayDir);
         
@@ -594,7 +612,7 @@ public:
         return n;
     }
 
-    Color getColor(Vector3D intersectionPoint){
+    Color getColor(Vector3D p){
         return color;
     }
 
@@ -900,28 +918,30 @@ void Object::applyNormalAndSpotLigts(
 
     double lambert = 0, phong = 0;
 
-    for(int i=0; i<lights.size(); i++){
-        calculateLambertAndPhong(lights[i], p, normal, reflectedRay, lambert, phong);
-    }
+    if(normalLightEnabled)
+        for(int i=0; i<lights.size(); i++){
+            calculateLambertAndPhong(lights[i], p, normal, reflectedRay, lambert, phong);
+        }
 
     // apply splot lights
-    for(int i=0; i<spotLights.size(); i++){
-        // V1 = determine vector SP 
-        // V1.normalize() 
-        // V2 = direction of the source S 
-        // V2.normalize() 
-        // angle = acos(v1.dot(v2)) 
-        // if angle > S.cutoff: 
-        // P is not illuminated
-        Vector3D sp = p - spotLights[i]->position; // vector from source to point
-        sp.normalize();
+    if(spotLightEnabled)
+        for(int i=0; i<spotLights.size(); i++){
+            // V1 = determine vector SP 
+            // V1.normalize() 
+            // V2 = direction of the source S 
+            // V2.normalize() 
+            // angle = acos(v1.dot(v2)) 
+            // if angle > S.cutoff: 
+            // P is not illuminated
+            Vector3D sp = p - spotLights[i]->position; // vector from source to point
+            sp.normalize();
 
-        double angle = acos(-sp.dot(spotLights[i]->direction));
-        if(RAD2DEG(angle) > spotLights[i]->cutoffangle){
-            continue;
+            double angle = acos(-sp.dot(spotLights[i]->direction));
+            if(RAD2DEG(angle) > spotLights[i]->cutoffangle){
+                continue;
+            }
+            calculateLambertAndPhong(spotLights[i], p, normal, reflectedRay, lambert, phong);
         }
-        calculateLambertAndPhong(spotLights[i], p, normal, reflectedRay, lambert, phong);
-    }
 
     // diffuse component
     c = c + getColor(p) * diffuse * max(lambert, 0.0);
