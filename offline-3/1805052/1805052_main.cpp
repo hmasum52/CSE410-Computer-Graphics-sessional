@@ -27,11 +27,6 @@ double fovY;                // field of vision along y axis
 double aspectRatio;         // aspect ratio of the view window
 int nRecurstion;            // recursion level of ray tracing
 int nPixels;                // number of pixels in each side of the view window(along both axis)
-int cellWidth;              // width of each chell of the infinite checkerboard
-double cofAmbient;             // ambient coefficient
-double cofDiffuse;             // diffuse coefficient
-double cofReflection;          // reflection coefficient
-int nObjects;                  // number of objects in the scene
 
 // opengl parameters
 double windowWidth = 700;
@@ -130,14 +125,7 @@ void captureBitmapImage(){
       // iterate all object to get the nearest hit point
       double tMin = INF;
       Object *nearestObject = nullptr;
-      for(auto o: objects){
-        // find intersecting point
-        double t = o->intersect(ray);
-        if(t>0 && t<tMin){
-          tMin = t;
-          nearestObject = o;
-        }
-      }
+      getNearestIntersectionPoint(ray, tMin, nearestObject);
 
       if(nearestObject!=nullptr){
         Color pixelColor(0, 0, 0);
@@ -322,19 +310,18 @@ void readDescription(){
 
 
   // width of each cell of the infinite checkerboard
+  int cellWidth;
   scene>>cellWidth;
   // ambient, diffuse and reflection coefficient
+  double cofAmbient, cofDiffuse, cofReflection;
   scene>>cofAmbient>>cofDiffuse>>cofReflection;
-  CheckerBoard* checkerBoard = new CheckerBoard(farDist, cellWidth, true);
-  cout<<"setting light coefficients to checkerboard"<<endl;
-  cout<<"cofAmbient: "<<cofAmbient<<endl;
-  cout<<"cofDiffuse: "<<cofDiffuse<<endl;
-  cout<<"cofReflection: "<<cofReflection<<endl;
+  CheckerBoard* checkerBoard = new CheckerBoard(farDist*2, cellWidth, true);
   checkerBoard->setLightCoefficients(cofAmbient, cofDiffuse, 0, cofReflection);
   checkerBoard->setShininess(30);
   objects.push_back(checkerBoard);
 
   // number of objects
+  int nObjects;
   scene>>nObjects;
 
   for (int i = 0; i < nObjects; i++){
