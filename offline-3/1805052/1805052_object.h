@@ -149,8 +149,8 @@ public:
 
         delete image;
 
-        cout<<"Texture read from "<<filename<<endl;
-        cout<<"size: "<< height << " " << width << endl;
+        // cout<<"Texture read from "<<filename<<endl;
+        // cout<<"size: "<< height << " " << width << endl;
 
         return texture;
     }
@@ -363,14 +363,15 @@ public:
         return tMin;
     }
 
-    friend ostream& operator>>(istream& os, Sphere& c){
-        os >> c.center; // center
-        os >> c.radius;
-        os >> c.color;
+    friend istream& operator>>(istream& is, Sphere& c){
+        is >> c.center; // center
+        is >> c.radius;
+        is >> c.color;
         double ambient, diffuse,specular, reflection; 
-        os >> ambient >> diffuse>> specular >> reflection;
+        is >> ambient >> diffuse>> specular >> reflection;
         c.setLightCoefficients(ambient, diffuse, specular, reflection);
-        os >> c.shininess;
+        is >> c.shininess;
+        return is;
     }
 };
 

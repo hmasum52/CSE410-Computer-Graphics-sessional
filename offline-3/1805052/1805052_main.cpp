@@ -100,7 +100,7 @@ void initPointBuffer(){
 }
 
 // cast ray
-void captureBitmapImage(){
+void renderWorld(){
   initPointBuffer();
 
   // init bitmap image
@@ -155,7 +155,7 @@ void captureBitmapImage(){
 
   cout<<"Rendering 100% complete"<<endl;
   image.save_image("out.bmp");
-  cout<<"image saved to out.bmp"<<endl;
+  cout<<"Image Saved to out.bmp"<<endl;
 }
 
 /* Handler for window re-size event. Called back when the window first appears and
@@ -182,7 +182,7 @@ void keyboardListener(unsigned char key, int x, int y) {
     double rate = ROTATE_UNIT;
 	switch(key){
     case '0': // caputre bitmap image
-      captureBitmapImage();
+      renderWorld();
       break;
 		case '1': // rotate/look right
 			r.x = r.x*cos(rate)+l.x*sin(rate);
@@ -250,7 +250,7 @@ void keyboardListener(unsigned char key, int x, int y) {
 
     // pressing space enable texture in checkerboard
     case ' ': // toggle texture
-      cout<<"toggling texture mode"<<endl;
+      cout<<(checkerBoard->isTexture() ? "Texture disabled" : "Texture enabled") <<endl;
       checkerBoard->toggleTexture();
       break;
 
@@ -308,10 +308,8 @@ void specialKeyListener(int key, int x,int y) {
 }
 
 // read description from "description.txt"
-void readDescription(){
+void readDescriptionFile(){
   fstream scene = open_file("description.txt", ios_base::in);
-
-  string blank; // to read blank lines
 
   // read distanse of near and far plane
   // fov along y axis
@@ -342,7 +340,7 @@ void readDescription(){
   for (int i = 0; i < nObjects; i++){
     string shape; // shape of the object
     scene>>shape;
-    cout<<"shape: "<<shape<<endl;
+    //cout<<"shape: "<<shape<<endl;
     if(shape == "sphere"){
       Sphere* s = new Sphere();
       scene>>*s;
@@ -360,7 +358,6 @@ void readDescription(){
       cout<<"unknown shape: "<<shape<<endl;
       exit(1);
     }
-    cout<<endl;
   }
 
   // read light source description
@@ -435,9 +432,8 @@ void initGL() {
 }
 
 int main(int argc, char** argv) {
-    cout<<"Reading input"<<endl;
-    readDescription(); // read description from "description.txt"
-    cout<<"Input read done"<<endl;
+    readDescriptionFile(); // read description from "description.txt"
+    cout<<"Done taking input"<<endl;
 
     init(); // set drawing parameters
 

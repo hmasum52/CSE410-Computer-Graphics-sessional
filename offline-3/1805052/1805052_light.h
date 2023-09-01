@@ -40,7 +40,6 @@ public:
   // friend function to read light from istream
   friend istream& operator>>(istream& in, NormalLight& light){
     in >> light.position >> light.falloff;
-    cout<<"Normal Light position: "<<light.position<<endl;
     return in;
   }
 };
@@ -48,7 +47,7 @@ public:
 class SpotLight: public NormalLight {
 public:
     Vector3D direction;
-    double cutoffangle; // in radians
+    double cutoffangle; // in degree
     
   // draw a cone 
   void draw(){
@@ -77,9 +76,6 @@ public:
     in >> light.position >> light.falloff >> light.direction >> light.cutoffangle;
     light.direction.normalize();
    // DEG2RAD(light.cutoffangle);
-    cout<<"Spot Light position: "<<light.position<<endl;
-    cout<<"Spot Light direction: "<<light.direction<<endl;
-    cout<<"Spot Light cutoffangle: "<<light.cutoffangle<<endl;
     return in;
   }
 

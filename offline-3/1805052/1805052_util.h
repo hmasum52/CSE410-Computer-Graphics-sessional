@@ -11,7 +11,7 @@ using namespace std;
 // can open file in both read and write mode
 // return a fstream object
 fstream open_file(string filename, ios_base::openmode mode = ios_base::in){
-    cout<<"Opening file: "<<filename<<endl;
+    //cout<<"Opening file: "<<filename<<endl;
     fstream file;
     file.open(filename, mode);
     if(!file.is_open()){
