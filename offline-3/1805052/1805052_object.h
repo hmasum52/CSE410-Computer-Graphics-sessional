@@ -646,30 +646,6 @@ public:
         return true;
     }
 
-    // get the normal
-    Vector3D normal1(Vector3D intersectionPoint){
-        Vector3D n(0, 0, 0);
-        if(intersectionPoint.x == bottomLeft.x){
-            n = Vector3D(-1, 0, 0);
-        }
-        else if(intersectionPoint.x == bottomLeft.x + side){
-            n = Vector3D(1, 0, 0);
-        }
-        else if(intersectionPoint.y == bottomLeft.y){
-            n = Vector3D(0, -1, 0);
-        }
-        else if(intersectionPoint.y == bottomLeft.y + side){
-            n = Vector3D(0, 1, 0);
-        }
-        else if(intersectionPoint.z == bottomLeft.z){
-            n = Vector3D(0, 0, -1);
-        }
-        else if(intersectionPoint.z == bottomLeft.z + side){
-            n = Vector3D(0, 0, 1);
-        }
-        return n;
-    }
-
 
     Vector3D normal(Vector3D intersectionPoint){
         Vector3D n(0, 0, 0);
