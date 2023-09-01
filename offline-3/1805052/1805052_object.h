@@ -109,7 +109,7 @@ class CheckerBoard : public Object{
     double wTile; // width of each tile
     vector<vector<Color>> texture_b; // texture for black color cell
     vector<vector<Color>> texture_w; // texture for white color cell
-    bool texture = false;
+    bool texture = true;
 
 public:
     CheckerBoard(){
@@ -153,6 +153,14 @@ public:
         cout<<"size: "<< height << " " << width << endl;
 
         return texture;
+    }
+
+    void setTexture(bool texture){
+        this->texture = texture;
+    }
+
+    void toggleTexture(){
+        texture = !texture;
     }
 
     // constructor with board width and number of tiles

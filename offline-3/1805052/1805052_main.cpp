@@ -32,6 +32,7 @@ int nPixels;                // number of pixels in each side of the view window(
 double windowWidth = 700;
 double windowHeight = 700;
 vector<vector<Vector3D>> pointBuffer;
+CheckerBoard* checkerBoard;
 
 Vector3D eye; 
 Vector3D u, r, l;
@@ -239,6 +240,12 @@ void keyboardListener(unsigned char key, int x, int y) {
 			r.z = r.z*cos(-rate)-u.z*sin(-rate);
 			break;
 
+    // pressing space enable texture in checkerboard
+    case ' ': // toggle texture
+      cout<<"toggling texture mode"<<endl;
+      checkerBoard->toggleTexture();
+      break;
+
     // Control exit
     case 27:    // ESC key
         exit(0);    // Exit window
@@ -315,7 +322,7 @@ void readDescription(){
   // ambient, diffuse and reflection coefficient
   double cofAmbient, cofDiffuse, cofReflection;
   scene>>cofAmbient>>cofDiffuse>>cofReflection;
-  CheckerBoard* checkerBoard = new CheckerBoard(farDist*2, cellWidth, true);
+  checkerBoard = new CheckerBoard(farDist*2, cellWidth, true);
   checkerBoard->setLightCoefficients(cofAmbient, cofDiffuse, 0, cofReflection);
   checkerBoard->setShininess(30);
   objects.push_back(checkerBoard);
