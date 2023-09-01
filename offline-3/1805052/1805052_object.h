@@ -834,7 +834,7 @@ void Object::applyDiffuseAndSpecularReflection(
         Vector3D sp = p - spotLights[i]->position; // vector from source to point
         sp.normalize();
 
-        double angle = acos(sp.dot(spotLights[i]->direction));
+        double angle = acos(-sp.dot(spotLights[i]->direction));
         if(RAD2DEG(angle) > spotLights[i]->cutoffangle){
             continue;
         }
@@ -848,13 +848,6 @@ void Object::applyDiffuseAndSpecularReflection(
         getNearestIntersectionPoint(lightRay, tMin, nearestObject);
 
         if(nearestObject != NULL && nearestObject != this){
-            continue;
-        }
-
-        Vector3D shodowPoint = spotLights[i]->position + sp * tMin;
-        double shadowDistance = (shodowPoint - p).magnitude();
-        double epsilon = 0.001;
-        if(shadowDistance > epsilon){
             continue;
         }
 
@@ -880,7 +873,7 @@ void Object::applyDiffuseAndSpecularReflection(
     c = c + getColor(p) * diffuse * max(lambert, 0.0);
 
     // specular component
-    c = c + Color(1,1,1) * specular * max(phong, 0.0);
+    c = c + getColor(p) * specular * max(phong, 0.0);
 
     // recursive reflection
 
