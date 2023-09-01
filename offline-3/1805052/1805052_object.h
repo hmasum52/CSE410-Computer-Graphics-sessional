@@ -109,7 +109,7 @@ class CheckerBoard : public Object{
     double wTile; // width of each tile
     vector<vector<Color>> texture_b; // texture for black color cell
     vector<vector<Color>> texture_w; // texture for white color cell
-    bool texture = true;
+    bool texture = false;
 
 public:
     CheckerBoard(){
@@ -163,6 +163,10 @@ public:
         texture = !texture;
     }
 
+    bool isTexture(){
+        return texture;
+    }
+
     // constructor with board width and number of tiles
     CheckerBoard(double wCheckerboard, double wTile, bool texture = false){
         topLeft = Vector3D(-wCheckerboard/2, -wCheckerboard/2, 0);
@@ -176,6 +180,9 @@ public:
     }
 
     void draw(){
+        if(texture){
+            return;
+        }
         double x, y;
         glBegin(GL_QUADS);{
             for(int i=0; i<nTile; i++){

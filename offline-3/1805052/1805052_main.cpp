@@ -96,20 +96,23 @@ void initPointBuffer(){
           pointBuffer[x][y] = pointOnNearPlane;
       }
   }
+  cout<<"Point buffer generation done"<<endl;
 }
 
 // cast ray
 void captureBitmapImage(){
-  cout<<"capturing bitmap image"<<endl;
-  cout<< "init point buffer"<<endl;
   initPointBuffer();
-  cout<<"point buffer init done"<<endl;
 
   // init bitmap image
   bitmap_image image(nPixels, nPixels);
   for(int i = 0; i<nPixels; i++) for(int j = 0; j<nPixels; j++) image.set_pixel(i, j, 0, 0, 0); // set black
-  cout<<"image init done"<<endl;
-  
+
+  int totalPixels = nPixels*nPixels;
+  int prevPercent = 0;
+
+  if(checkerBoard->isTexture()){
+    cout<<"Rendering image with texture"<<endl;
+  }
 
   for(int i = 0; i<pointBuffer.size(); i++){
     for(int j = 0; j<pointBuffer[i].size(); j++){
@@ -141,13 +144,18 @@ void captureBitmapImage(){
         image.set_pixel(i, j, 0, 0, 0);
       }
 
+      double percent = (i*nPixels + j)*100.0/totalPixels;
+
+      if(int(percent)- (int)prevPercent == 10){
+        cout<<"Rendering "<<(int)percent<<"% complete"<<endl; // print progress
+        prevPercent = percent;
+      }
     }
   }
 
-  cout<<"image capture done"<<endl;
-  cout<<"saving image"<<endl;
+  cout<<"Rendering 100% complete"<<endl;
   image.save_image("out.bmp");
-  cout<<"image saved at out.bmp"<<endl;
+  cout<<"image saved to out.bmp"<<endl;
 }
 
 /* Handler for window re-size event. Called back when the window first appears and
@@ -322,7 +330,7 @@ void readDescription(){
   // ambient, diffuse and reflection coefficient
   double cofAmbient, cofDiffuse, cofReflection;
   scene>>cofAmbient>>cofDiffuse>>cofReflection;
-  checkerBoard = new CheckerBoard(farDist*2, cellWidth, true);
+  checkerBoard = new CheckerBoard(farDist*2, cellWidth);
   checkerBoard->setLightCoefficients(cofAmbient, cofDiffuse, 0, cofReflection);
   checkerBoard->setShininess(30);
   objects.push_back(checkerBoard);
