@@ -12,6 +12,7 @@
 #include "1805052_color.h"
 #include "1805052_ray.h"
 #include "1805052_light.h"
+#include "bitmap_image.hpp"
 using namespace std;
 
 #define INF 1e9
@@ -106,6 +107,9 @@ class CheckerBoard : public Object{
     Vector3D topLeft;  // center of the board
     int nTile; // number of tiles in each row/column
     double wTile; // width of each tile
+    vector<vector<Color>> texture_b; // texture for black color cell
+    vector<vector<Color>> texture_w; // texture for white color cell
+    bool texture = false;
 
 public:
     CheckerBoard(){
@@ -114,11 +118,53 @@ public:
         nTile = 0;
     }
 
+    // function to read a bmp file 
+    // pixel by pixel
+    vector<vector<Color>> read_texture(string filename){
+        bitmap_image* image = new bitmap_image(filename);
+        vector<vector<Color>> texture;
+
+        if (!image) {
+            cout << "Error - Failed to open: " << filename << endl;
+            return texture;
+        }
+
+        unsigned int height = image->height();
+        unsigned int width = image->width();
+
+        texture.resize(height);
+        for(int i=0; i<height; i++){
+            texture[i].resize(width);
+        }
+
+        unsigned char r, g, b;
+
+        for (int i = 0; i < height; i++) {
+            for (int j = 0; j < width; j++){
+                image->get_pixel(j, i, r, g, b);
+                texture[i][j] = Color((int)r/255.0, (int)g/255.0, (int)b/255.0);
+                //cout<<texture[i][j]<<endl;
+            }
+        }
+
+        delete image;
+
+        cout<<"Texture read from "<<filename<<endl;
+        cout<<"size: "<< height << " " << width << endl;
+
+        return texture;
+    }
+
     // constructor with board width and number of tiles
-    CheckerBoard(double wCheckerboard, double wTile){
+    CheckerBoard(double wCheckerboard, double wTile, bool texture = false){
         topLeft = Vector3D(-wCheckerboard/2, -wCheckerboard/2, 0);
         this->wTile = wTile;
         nTile = (int) wCheckerboard / wTile;
+        this->texture = texture;
+
+        texture_w = read_texture("texture_w.bmp");
+        //texture_w = read_texture("../Assignment-RayTracer/mushfiq.bmp");
+        texture_b = read_texture("texture_b.bmp");
     }
 
     void draw(){
@@ -147,12 +193,40 @@ public:
         return Vector3D(0, 0, intersectionPoint.z> 0 ? 1 : -1);
     }
 
+    Color getTextureColor(Vector3D p){
+        int i = (p.x - topLeft.x) / wTile;
+        int j = (p.y - topLeft.y) / wTile;
+
+        int x = (int) (i*wTile);
+        int y = (int) (j*wTile);
+
+        double px = (p.x - topLeft.x) - x;
+        double py = (p.y - topLeft.y) - y;
+    
+        if((i+j)%2 == 0){
+            int pixel_x = (int) (px/wTile * (texture_b.size()-1));
+            int pixel_y = (int) (py/wTile * (texture_b.size()-1));
+            //cout<<"black "<<i<<" "<<j<<" "<<texture_b[i][j]<<endl;
+            return texture_b[pixel_y][pixel_x];
+        }
+        else{
+            int pixel_x = (int) (px/wTile * (texture_w.size()-1));
+            int pixel_y = (int) (py/wTile * (texture_w.size()-1));      
+            return texture_w[pixel_y][pixel_x];
+        }
+    }
+
     // color at point p
     Color getColor(Vector3D p){
+        if(texture){
+            return getTextureColor(p);
+        }
+
         int i = (p.x - topLeft.x) / wTile;
         int j = (p.y - topLeft.y) / wTile;
         int color = (i+j)%2 == 0 ? 1 : 0;
         return Color(color, color, color);
+
     }
 
     // find intersection point of the ray with the board
@@ -849,7 +923,7 @@ void Object::applyDiffuseAndSpecularReflection(
     c = c + getColor(p) * diffuse * max(lambert, 0.0);
 
     // specular component
-    c = c + getColor(p) * specular * max(phong, 0.0);
+    c = c + Color(1,1,1) * specular * max(phong, 0.0);
 
     // recursive reflection
 

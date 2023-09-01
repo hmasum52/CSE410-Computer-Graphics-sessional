@@ -325,7 +325,7 @@ void readDescription(){
   scene>>cellWidth;
   // ambient, diffuse and reflection coefficient
   scene>>cofAmbient>>cofDiffuse>>cofReflection;
-  CheckerBoard* checkerBoard = new CheckerBoard(farDist, cellWidth);
+  CheckerBoard* checkerBoard = new CheckerBoard(farDist, cellWidth, true);
   cout<<"setting light coefficients to checkerboard"<<endl;
   cout<<"cofAmbient: "<<cofAmbient<<endl;
   cout<<"cofDiffuse: "<<cofDiffuse<<endl;
