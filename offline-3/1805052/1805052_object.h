@@ -50,7 +50,11 @@ public:
         this->shininess = shininess;
     }
 
-    void setLightCoefficients(double ambient, double diffuse, double specular, double recursive){
+    void setLightCoefficients(
+        double ambient, 
+        double diffuse, 
+        double specular, 
+        double recursive){
         this->ambient = ambient;
         this->diffuse = diffuse;
         this->specular = specular;
@@ -62,20 +66,24 @@ public:
     }
 
     // illuminate 
-    Color illuminate(Vector3D p, Vector3D normal, Vector3D incidentRay){
+    Color illuminate(Vector3D p, Vector3D normal, Vector3D incidentRay, int level){
         Color c(0, 0, 0);
 
         // ambient
         c = c + getColor(p) *ambient;
 
         // diffuse
-        applyDiffuseAndSpecularReflection(c, p, normal, incidentRay);
+        applyDiffuseAndSpecularReflection(c, p, normal, incidentRay, level);
 
+        // reflected ray
         return c;
     }
 
     // apply diffuse and specular reflection
-    void applyDiffuseAndSpecularReflection(Color &c, Vector3D p, Vector3D normal, Vector3D incidentRay);
+    void applyDiffuseAndSpecularReflection(Color &c, Vector3D p, Vector3D normal, Vector3D incidentRay, int level);
+
+    // apply spoit lights
+    void applySpotLights(double& intensity, Vector3D normal, Vector3D incidentRay);
 
     virtual void draw() = 0;
 
@@ -136,7 +144,7 @@ public:
 
 
     Vector3D normal(Vector3D intersectionPoint){
-        return Vector3D(0, 0, 1);
+        return Vector3D(0, 0, intersectionPoint.z> 0 ? 1 : -1);
     }
 
     // color at point p
@@ -175,7 +183,7 @@ public:
             return t;
         }
 
-        color = illuminate(intersectionPoint, n, ray.dir);
+        color = illuminate(intersectionPoint, n, ray.dir, level);
         //color = getColor(intersectionPoint);
 
         return t;
@@ -260,7 +268,7 @@ public:
         }
 
         intersectionPoint = origin + dir*tMin;
-        color = illuminate(intersectionPoint, normal(intersectionPoint), dir);
+        color = illuminate(intersectionPoint, normal(intersectionPoint), dir, level);
         //color = this->color;
 
         return tMin;
@@ -294,8 +302,9 @@ class Pyramid : public Object{
         Vector3D h = rayDir.cross(edge2);
         double a = edge1.dot(h);
 
-        // epsilon value is used for numerical stability and to handle cases where the ray is very close to the triangle.
-        const double epsilon = 1e-5;
+        // epsilon value is used for numerical stability and 
+        // to handle cases where the ray is very close to the triangle.
+        const double epsilon = 0.001;
 
         if (a > -epsilon && a < epsilon) {
             return false; // Ray is parallel to the triangle
@@ -368,7 +377,8 @@ class Pyramid : public Object{
     }
 
 
-    bool intersectRayPyramid(const Ray& ray, Vector3D& intersectionPoint, double& distance) {
+    bool intersectRayPyramid(
+        const Ray& ray, double& distance, Vector3D& normal) {
         Vector3D rayOrigin = ray.origin;
         Vector3D rayDir = ray.dir;
         Vector3D v0 = lowestPoint;
@@ -381,8 +391,13 @@ class Pyramid : public Object{
 
 
         // Check for intersection with the pyramid's base
+        double tMin = INF;
         double t;
         bool intersected = intersectRaySquare(ray, t);
+        if (intersected) {
+            tMin = t;
+            normal = Vector3D(0, 0, -1);
+        }
 
         // Check for intersection with each triangular face
         for (int i = 0; i < 4; i++) {
@@ -390,9 +405,10 @@ class Pyramid : public Object{
             Vector3D v1 = vertices[(i + 1) % 4];
             Vector3D v2 = apex;
             
-            if(intersectTriangle(ray, v0, v1, v2, t)) {
+            if(intersectTriangle(ray, v0, v1, v2, t) && t < tMin) {
                 intersected = true;
                 distance = t;
+                normal = (v1 - v0).cross(v2 - v0).normalize();
             }
         }
 
@@ -489,13 +505,15 @@ public:
         
         Vector3D intersectionPoint;
         double tMin = INF;
+        Vector3D n;
 
-        if(intersectRayPyramid(ray, intersectionPoint, tMin)){
+        if(intersectRayPyramid(ray,tMin, n)){
             if(level == 0){
                 return tMin;
             }
+            intersectionPoint = ray.origin + ray.dir*tMin;
             // illuminate the intersection point
-            color = illuminate(intersectionPoint, normal(intersectionPoint), ray.dir);
+            color = illuminate(intersectionPoint, n, ray.dir, level);
             //color = this->color;
             return tMin;
         }
@@ -592,13 +610,6 @@ public:
             return false;
         }
 
-        /* if (tyMin > tMin) {
-            tMin = tyMin;
-            
-        }
-        if (tyMax < tMax) {
-            tMax = tyMax;
-        } */
         tMin = max (tMin, tyMin);
         tMax = min (tMax, tyMax);
         
@@ -684,7 +695,7 @@ public:
         }
         return n;
     }
-    
+
     Color getColor(Vector3D intersectionPoint){
         return color;
     }
@@ -700,7 +711,7 @@ public:
                 return tMin;
             }
             // illuminate the intersection point
-            color = illuminate(intersectionPoint, normal(intersectionPoint), ray.dir);
+            color = illuminate(intersectionPoint, normal(intersectionPoint), ray.dir, level);
             //color = this->color;
             return tMin;
         }
@@ -733,9 +744,12 @@ vector<SpotLight*> spotLights; // spot light sources in the scene
 
 void getNearestIntersectionPoint(Ray ray, double& tMin, Object*& nearestObject){
     tMin = INF;
+
+    double eps = 0.001; // to avoid self intersection
+
     for(int i=0; i<objects.size(); i++){
         double t = objects[i]->intersect(ray);
-        if(t < tMin){
+        if(t < tMin && t > eps){
             tMin = t;
             nearestObject = objects[i];
         }
@@ -746,7 +760,7 @@ void Object::applyDiffuseAndSpecularReflection(
     Color &c, 
     Vector3D p, // intersection point
     Vector3D normal, 
-    Vector3D incidentRay){
+    Vector3D incidentRay, int level){
     /*
     lambert = phong = 0
     For all sources S:
@@ -767,6 +781,10 @@ void Object::applyDiffuseAndSpecularReflection(
     Specular component is found as: s*phong *red, s* phong *green, s* phong *blue
     */
 
+   // reflected ray
+    Vector3D reflectedRay = incidentRay - normal * 2 * incidentRay.dot(normal);
+    reflectedRay.normalize();
+
     double lambert = 0, phong = 0;
 
     for(int i=0; i<lights.size(); i++){
@@ -778,6 +796,10 @@ void Object::applyDiffuseAndSpecularReflection(
         getNearestIntersectionPoint(lightRay, tMin, nearestObject);
         
         // if the light source does not illuminate the point, continue
+        if(nearestObject == NULL){
+            continue;
+        }
+
         if(nearestObject != NULL && nearestObject != this){
             continue;
         }
@@ -795,17 +817,102 @@ void Object::applyDiffuseAndSpecularReflection(
         // lambert
         lambert += max(toSource.dot(normal), 0.0) * scalingFactor;
 
-        // reflected ray
-        Vector3D reflectedRay = incidentRay - normal * 2 * incidentRay.dot(normal);
-        reflectedRay.normalize();
+        // phong
+        phong += pow(max(reflectedRay.dot(toSource), 0.0), shininess) * scalingFactor;
+    }
+
+    // apply splot lights
+    for(int i=0; i<spotLights.size(); i++){
+        // V1 = determine vector SP 
+        // V1.normalize() 
+        // V2 = direction of the source S 
+        // V2.normalize() 
+        // angle = acos(v1.dot(v2)) 
+        // if angle > S.cutoff: 
+        // P is not illuminated
+
+        Vector3D sp = p - spotLights[i]->position; // vector from source to point
+        sp.normalize();
+
+        double angle = acos(sp.dot(spotLights[i]->direction));
+        if(RAD2DEG(angle) > spotLights[i]->cutoffangle){
+            continue;
+        }
+
+
+        // check if the light source illuminates the point
+        // make a ray from light to the point
+        Ray lightRay(spotLights[i]->position, sp);
+        double tMin = INF;
+        Object* nearestObject = NULL;
+        getNearestIntersectionPoint(lightRay, tMin, nearestObject);
+
+        if(nearestObject != NULL && nearestObject != this){
+            continue;
+        }
+
+        Vector3D shodowPoint = spotLights[i]->position + sp * tMin;
+        double shadowDistance = (shodowPoint - p).magnitude();
+        double epsilon = 0.001;
+        if(shadowDistance > epsilon){
+            continue;
+        }
+
+
+        // vector to source
+        Vector3D toSource = spotLights[i]->position - p;
+        toSource.normalize();
+
+        // distance between intersecting point and source
+        double distance = (spotLights[i]->position - p).magnitude();
+
+        // scaling factor
+        double scalingFactor = exp(-distance*distance*spotLights[i]->falloff);
+
+        // lambert
+        lambert += max(toSource.dot(normal), 0.0) * scalingFactor;
 
         // phong
         phong += pow(max(reflectedRay.dot(toSource), 0.0), shininess) * scalingFactor;
     }
 
     // diffuse component
-    c = c + getColor(p) * diffuse * lambert;
+    c = c + getColor(p) * diffuse * max(lambert, 0.0);
 
     // specular component
-    c = c + Color(1,1,1) * specular * phong;
+    c = c + Color(1,1,1) * specular * max(phong, 0.0);
+
+    // recursive reflection
+
+    // check if recursive reflection is needed
+    if(level==0){
+        return;
+    }
+
+    // reflected ray
+    Ray reflected(p, reflectedRay);
+
+    // find the nearest object
+    double tMin = INF;
+    Object* nearestObject = NULL;
+    getNearestIntersectionPoint(reflected, tMin, nearestObject);
+
+    // if no object is intersected, return
+    if(nearestObject == NULL){
+        return;
+    }
+
+    // find the intersection point
+    Color refelectedColor(0, 0, 0);
+
+    // illuminate the intersection point
+    nearestObject->intersectAndIlluminate(reflected, refelectedColor, level-1);
+
+    // apply reflection
+    c = c + refelectedColor * reflection;
+
+    // clip color vlaues
+    c.r = max(min(c.r, 1.0), 0.0);
+    c.g = max(min(c.g, 1.0), 0.0);
+    c.b = max(min(c.b, 1.0), 0.0);
 }

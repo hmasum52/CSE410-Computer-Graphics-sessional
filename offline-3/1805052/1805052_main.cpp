@@ -141,7 +141,7 @@ void captureBitmapImage(){
 
       if(nearestObject!=nullptr){
         Color pixelColor(0, 0, 0);
-        tMin = nearestObject->intersectAndIlluminate(ray, pixelColor, 1);
+        tMin = nearestObject->intersectAndIlluminate(ray, pixelColor, nRecurstion);
 
         //cout<<"pixel color: "<<pixelColor<<endl;
 
@@ -326,7 +326,12 @@ void readDescription(){
   // ambient, diffuse and reflection coefficient
   scene>>cofAmbient>>cofDiffuse>>cofReflection;
   CheckerBoard* checkerBoard = new CheckerBoard(farDist, cellWidth);
+  cout<<"setting light coefficients to checkerboard"<<endl;
+  cout<<"cofAmbient: "<<cofAmbient<<endl;
+  cout<<"cofDiffuse: "<<cofDiffuse<<endl;
+  cout<<"cofReflection: "<<cofReflection<<endl;
   checkerBoard->setLightCoefficients(cofAmbient, cofDiffuse, 0, cofReflection);
+  checkerBoard->setShininess(30);
   objects.push_back(checkerBoard);
 
   // number of objects
