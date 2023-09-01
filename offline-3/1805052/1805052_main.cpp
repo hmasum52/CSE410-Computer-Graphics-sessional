@@ -16,8 +16,8 @@ using namespace std;
 
 // macro for degree to radian conversion
 #define DEG2RAD(deg) (deg * M_PI / 180)
-#define MOVE_RATE 4
-#define ROTATE_UNIT 3*(M_PI/180)
+#define MOVE_RATE 6
+#define ROTATE_UNIT 4*(M_PI/180)
 #define INF 1e9
 #define fori(i, n) for(int i = 0; i<n; i++)
 
@@ -175,6 +175,18 @@ void reshapeListener(GLsizei width, GLsizei height) {  // GLsizei for non-negati
     gluPerspective(fovY, aspectRatio, nearDist, farDist);
 }
 
+void rotatePlus(Vector3D&a, Vector3D&b, double angle){
+  a.x = a.x * cos(angle) + b.x * sin(angle);
+  a.y = a.y * cos(angle) + b.y * sin(angle);
+  a.z = a.z * cos(angle) + b.z * sin(angle);
+}
+
+void rotateMinus(Vector3D&a, Vector3D&b, double angle){
+  a.x = a.x * cos(-angle) - b.x * sin(angle);
+  a.y = a.y * cos(-angle) - b.y * sin(angle);
+  a.z = a.z * cos(-angle) - b.z * sin(angle);
+}
+
 /* Callback handler for normal-key event */
 void keyboardListener(unsigned char key, int x, int y) {
     double rate = ROTATE_UNIT;
@@ -183,67 +195,37 @@ void keyboardListener(unsigned char key, int x, int y) {
       renderWorld();
       break;
 		case '1': // rotate/look right
-			r.x = r.x*cos(rate)+l.x*sin(rate);
-			r.y = r.y*cos(rate)+l.y*sin(rate);
-			r.z = r.z*cos(rate)+l.z*sin(rate);
-
-			l.x = l.x*cos(rate)-r.x*sin(rate);
-			l.y = l.y*cos(rate)-r.y*sin(rate);
-			l.z = l.z*cos(rate)-r.z*sin(rate);
+			rotatePlus(r, l, rate);
+			rotateMinus(l, r, rate);
 			break;
 
-        case '2': // rotate/look left
-			r.x = r.x*cos(-rate)+l.x*sin(-rate);
-			r.y = r.y*cos(-rate)+l.y*sin(-rate);
-			r.z = r.z*cos(-rate)+l.z*sin(-rate);
-
-			l.x = l.x*cos(-rate)-r.x*sin(-rate);
-			l.y = l.y*cos(-rate)-r.y*sin(-rate);
-			l.z = l.z*cos(-rate)-r.z*sin(-rate);
+    case '2': // rotate/look left
+      rotatePlus(r, l, -rate);
+      rotateMinus(l, r, -rate);
 			break;
 
-        case '3': // look up
+    case '3': // look up
            // rate = 0.1;
-			l.x = l.x*cos(rate)+u.x*sin(rate);
-			l.y = l.y*cos(rate)+u.y*sin(rate);
-			l.z = l.z*cos(rate)+u.z*sin(rate);
-
-			u.x = u.x*cos(rate)-l.x*sin(rate);
-			u.y = u.y*cos(rate)-l.y*sin(rate);
-			u.z = u.z*cos(rate)-l.z*sin(rate);
+			rotatePlus(l, u, rate);
+      rotateMinus(u, l, rate);
 			break;
 
-        case '4': // look down 
-            //rate = 0.1;
-			l.x = l.x*cos(-rate)+u.x*sin(-rate);
-			l.y = l.y*cos(-rate)+u.y*sin(-rate);
-			l.z = l.z*cos(-rate)+u.z*sin(-rate);
-
-			u.x = u.x*cos(-rate)-l.x*sin(-rate);
-			u.y = u.y*cos(-rate)-l.y*sin(-rate);
-			u.z = u.z*cos(-rate)-l.z*sin(-rate);
+    case '4': // look down 
+            //rate = 0.1
+      rotatePlus(l, u, -rate);
+      rotateMinus(u, l, -rate);
 			break;
 
-        case '5': // tilt counter clockwise
+    case '5': // tilt counter clockwise
             //rate = 0.01;
-			u.x = u.x*cos(rate)+r.x*sin(rate);
-			u.y = u.y*cos(rate)+r.y*sin(rate);
-			u.z = u.z*cos(rate)+r.z*sin(rate);
-
-			r.x = r.x*cos(rate)-u.x*sin(rate);
-			r.y = r.y*cos(rate)-u.y*sin(rate);
-			r.z = r.z*cos(rate)-u.z*sin(rate);
+			rotatePlus(r, u, rate);
+      rotateMinus(u, r, rate);
 			break;
 
-        case '6': // tilt clockwise
+     case '6': // tilt clockwise
            // rate = 0.01;
-			u.x = u.x*cos(-rate)+r.x*sin(-rate);
-			u.y = u.y*cos(-rate)+r.y*sin(-rate);
-			u.z = u.z*cos(-rate)+r.z*sin(-rate);
-
-			r.x = r.x*cos(-rate)-u.x*sin(-rate);
-			r.y = r.y*cos(-rate)-u.y*sin(-rate);
-			r.z = r.z*cos(-rate)-u.z*sin(-rate);
+			rotatePlus(r, u, -rate);
+      rotateMinus(u, r, -rate);
 			break;
 
     // pressing space enable texture in checkerboard
@@ -265,39 +247,22 @@ void specialKeyListener(int key, int x,int y) {
     double rate = MOVE_RATE;                          // scaling factor
     switch(key){
 		case GLUT_KEY_UP:		//down arrow key
-			eye.x+=l.x * rate;
-			eye.y+=l.y * rate;
-			eye.z+=l.z * rate;
+			eye = eye + l * rate;
 			break;
 		case GLUT_KEY_DOWN:		// up arrow key
-			eye.x-=l.x * rate;
-			eye.y-=l.y * rate;
-			eye.z-=l.z * rate;
+			eye = eye - l * rate;
 			break;
-
 		case GLUT_KEY_RIGHT:
-           // rate = 0.02;
-			eye.x+=r.x * rate;
-			eye.y+=r.y * rate;
-			eye.z+=r.z * rate;
+      eye = eye + r * rate;
 			break;
 		case GLUT_KEY_LEFT :
-            //rate = 0.02;
-			eye.x-=r.x * rate;
-			eye.y-=r.y * rate;
-			eye.z-=r.z * rate;
+      eye = eye - r * rate;
 			break;
 		case GLUT_KEY_PAGE_UP:
-            //rate = 0.1;
-		    eye.x+=u.x * rate ;
-			eye.y+=u.y * rate;
-			eye.z+=u.z * rate;
+      eye = eye + u * rate;
 			break;
 		case GLUT_KEY_PAGE_DOWN:
-           // rate = 0.1;
-            eye.x-=u.x * rate;
-			eye.y-=u.y * rate;
-			eye.z-=u.z * rate;
+      eye = eye - u * rate;
 			break;
     default:
         return;
