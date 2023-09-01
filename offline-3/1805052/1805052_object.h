@@ -73,18 +73,26 @@ public:
         // ambient
         c = c + getColor(p) *ambient;
 
-        // diffuse
-        applyDiffuseAndSpecularReflection(c, p, normal, incidentRay, level);
+        // normal and spot lights
+        applyNormalAndSpotLigts(c, p, normal, incidentRay, level);
 
-        // reflected ray
+        // reflection
+        applyReflection(c, p, normal, incidentRay, level);
+
         return c;
     }
 
-    // apply diffuse and specular reflection
-    void applyDiffuseAndSpecularReflection(Color &c, Vector3D p, Vector3D normal, Vector3D incidentRay, int level);
+    void calculateLambertAndPhong( 
+        NormalLight* light,
+        Vector3D p, 
+        Vector3D normal, 
+        Vector3D reflectedRay, double& lambert, double& phong);
 
-    // apply spoit lights
-    void applySpotLights(double& intensity, Vector3D normal, Vector3D incidentRay);
+    // apply diffuse and specular reflection
+    void applyNormalAndSpotLigts(Color &c, Vector3D p, Vector3D normal, Vector3D incidentRay, int level);
+
+    void applyReflection(Color& c, Vector3D p, Vector3D normal, Vector3D incidentRay, int level);
+
 
     virtual void draw() = 0;
 
@@ -175,7 +183,7 @@ public:
         this->texture = texture;
 
         texture_w = read_texture("texture_w.bmp");
-        //texture_w = read_texture("../Assignment-RayTracer/mushfiq.bmp");
+        //texture_w = read_texture("../Assignment-RayTracer/tahmid.bmp");
         texture_b = read_texture("texture_b.bmp");
     }
 
@@ -808,6 +816,7 @@ vector<NormalLight*> lights; // light sources in the scene
 // spot light source description
 vector<SpotLight*> spotLights; // spot light sources in the scene
 
+
 void getNearestIntersectionPoint(Ray ray, double& tMin, Object*& nearestObject){
     tMin = INF;
 
@@ -822,7 +831,45 @@ void getNearestIntersectionPoint(Ray ray, double& tMin, Object*& nearestObject){
     }
 }
 
-void Object::applyDiffuseAndSpecularReflection(
+void Object::calculateLambertAndPhong( 
+        NormalLight* light,
+        Vector3D p, 
+        Vector3D normal, 
+        Vector3D reflectedRay, double& lambert, double& phong){
+        // check if the light source illuminates the point
+        // make a ray from light to the point
+        Ray lightRay(light->position, p - light->position);
+        double tMin = INF;
+        Object* nearestObject = NULL;
+        getNearestIntersectionPoint(lightRay, tMin, nearestObject);
+        
+        // if the light source does not illuminate the point, continue
+        if(nearestObject == NULL){
+            return;
+        }
+
+        if(nearestObject != NULL && nearestObject != this){
+            return;
+        }
+
+        // vector to source
+        Vector3D toSource = light->position - p;
+        toSource.normalize();
+
+        // distance between intersecting point and source
+        double distance = (light->position - p).magnitude();
+
+        // scaling factor
+        double scalingFactor = exp(-distance*distance*light->falloff);
+
+        // lambert
+        lambert += max(toSource.dot(normal), 0.0) * scalingFactor;
+
+        // phong
+        phong += pow(max(reflectedRay.dot(toSource), 0.0), shininess) * scalingFactor;
+    }
+
+void Object::applyNormalAndSpotLigts(
     Color &c, 
     Vector3D p, // intersection point
     Vector3D normal, 
@@ -854,37 +901,7 @@ void Object::applyDiffuseAndSpecularReflection(
     double lambert = 0, phong = 0;
 
     for(int i=0; i<lights.size(); i++){
-        // check if the light source illuminates the point
-        // make a ray from light to the point
-        Ray lightRay(lights[i]->position, p - lights[i]->position);
-        double tMin = INF;
-        Object* nearestObject = NULL;
-        getNearestIntersectionPoint(lightRay, tMin, nearestObject);
-        
-        // if the light source does not illuminate the point, continue
-        if(nearestObject == NULL){
-            continue;
-        }
-
-        if(nearestObject != NULL && nearestObject != this){
-            continue;
-        }
-
-        // vector to source
-        Vector3D toSource = lights[i]->position - p;
-        toSource.normalize();
-
-        // distance between intersecting point and source
-        double distance = (lights[i]->position - p).magnitude();
-
-        // scaling factor
-        double scalingFactor = exp(-distance*distance*lights[i]->falloff);
-
-        // lambert
-        lambert += max(toSource.dot(normal), 0.0) * scalingFactor;
-
-        // phong
-        phong += pow(max(reflectedRay.dot(toSource), 0.0), shininess) * scalingFactor;
+        calculateLambertAndPhong(lights[i], p, normal, reflectedRay, lambert, phong);
     }
 
     // apply splot lights
@@ -896,7 +913,6 @@ void Object::applyDiffuseAndSpecularReflection(
         // angle = acos(v1.dot(v2)) 
         // if angle > S.cutoff: 
         // P is not illuminated
-
         Vector3D sp = p - spotLights[i]->position; // vector from source to point
         sp.normalize();
 
@@ -904,35 +920,7 @@ void Object::applyDiffuseAndSpecularReflection(
         if(RAD2DEG(angle) > spotLights[i]->cutoffangle){
             continue;
         }
-
-
-        // check if the light source illuminates the point
-        // make a ray from light to the point
-        Ray lightRay(spotLights[i]->position, sp);
-        double tMin = INF;
-        Object* nearestObject = NULL;
-        getNearestIntersectionPoint(lightRay, tMin, nearestObject);
-
-        if(nearestObject != NULL && nearestObject != this){
-            continue;
-        }
-
-
-        // vector to source
-        Vector3D toSource = spotLights[i]->position - p;
-        toSource.normalize();
-
-        // distance between intersecting point and source
-        double distance = (spotLights[i]->position - p).magnitude();
-
-        // scaling factor
-        double scalingFactor = exp(-distance*distance*spotLights[i]->falloff);
-
-        // lambert
-        lambert += max(toSource.dot(normal), 0.0) * scalingFactor;
-
-        // phong
-        phong += pow(max(reflectedRay.dot(toSource), 0.0), shininess) * scalingFactor;
+        calculateLambertAndPhong(spotLights[i], p, normal, reflectedRay, lambert, phong);
     }
 
     // diffuse component
@@ -940,13 +928,17 @@ void Object::applyDiffuseAndSpecularReflection(
 
     // specular component
     c = c + Color(1,1,1) * specular * max(phong, 0.0);
+}
 
-    // recursive reflection
-
+void Object::applyReflection(Color& c, Vector3D p, Vector3D normal, Vector3D incidentRay, int level){
     // check if recursive reflection is needed
     if(level==0){
         return;
     }
+
+    // reflected ray
+    Vector3D reflectedRay = incidentRay - normal * 2 * incidentRay.dot(normal);
+    reflectedRay.normalize();
 
     // reflected ray
     Ray reflected(p, reflectedRay);

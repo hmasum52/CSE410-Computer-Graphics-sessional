@@ -29,8 +29,8 @@ int nRecurstion;            // recursion level of ray tracing
 int nPixels;                // number of pixels in each side of the view window(along both axis)
 
 // opengl parameters
-double windowWidth = 700;
-double windowHeight = 700;
+double windowWidth = nPixels;
+double windowHeight = nPixels;
 vector<vector<Vector3D>> pointBuffer;
 CheckerBoard* checkerBoard;
 
@@ -124,7 +124,7 @@ void renderWorld(){
       // if we start from the eye, we will have to do extra checks to implement the near plane
       // if you start from the point on the near plane, then we only have to 
       // check that thte parameter t > 0
-      Ray ray = Ray(pointOnNearPlane, rayDir);
+      Ray ray = Ray(eye, rayDir);
 
       // iterate all object to get the nearest hit point
       double tMin = INF;
@@ -134,8 +134,6 @@ void renderWorld(){
       if(nearestObject!=nullptr){
         Color pixelColor(0, 0, 0);
         tMin = nearestObject->intersectAndIlluminate(ray, pixelColor, nRecurstion);
-
-        //cout<<"pixel color: "<<pixelColor<<endl;
 
         image.set_pixel(i, j, 255*pixelColor.r, 255*pixelColor.g, 255*pixelColor.b);
       }else{
