@@ -347,23 +347,31 @@ void keyboardListener(unsigned char key, int x, int y) {
 /* Callback handler for special-key event */
 void specialKeyListener(int key, int x,int y) {
     double rate = MOVE_RATE;                          // scaling factor
+    Vector3D change(0, 0, 0);
     switch(key){
 		case GLUT_KEY_UP:		//down arrow key
+      change = l * rate;
+
 			eye = eye + l * rate;
 			break;
 		case GLUT_KEY_DOWN:		// up arrow key
+      change = (Vector3D(0,0,0) -l) * rate;
 			eye = eye - l * rate;
 			break;
 		case GLUT_KEY_RIGHT:
+      change = r * rate;
       eye = eye + r * rate;
 			break;
 		case GLUT_KEY_LEFT :
+      change = (Vector3D(0,0,0) -r) * rate;
       eye = eye - r * rate;
 			break;
 		case GLUT_KEY_PAGE_UP:
+      change = u * rate;
       eye = eye + u * rate;
 			break;
 		case GLUT_KEY_PAGE_DOWN:
+      change = (Vector3D(0,0,0) -u) * rate;
       eye = eye - u * rate;
 			break;
     case GLUT_KEY_INSERT:
@@ -372,6 +380,12 @@ void specialKeyListener(int key, int x,int y) {
     default:
         return;
     }
+    
+    // for infinite checkerboard
+    checkerBoard->addToTopLeft(
+      change.x, change.y, 0
+    );
+  
     glutPostRedisplay();    // Post a paint request to activate display()
 }
 

@@ -130,16 +130,17 @@ public:
 
 
 class CheckerBoard : public Object{
-    Vector3D topLeft;  // center of the board
+    Vector3D bottomLeft;  // center of the board
+    double extra_x, extra_y; // extra width and height for infinite board
+    double wCheckerboard; // width of the board
     int nTile; // number of tiles in each row/column
     double wTile; // width of each tile
     vector<vector<Color>> texture_b; // texture for black color cell
     vector<vector<Color>> texture_w; // texture for white color cell
     bool texture = false;
-
 public:
     CheckerBoard(){
-        topLeft = Vector3D(0, 0, 0);
+        bottomLeft = Vector3D(0, 0, 0);
         wTile = 0;
         nTile = 0;
     }
@@ -195,7 +196,8 @@ public:
 
     // constructor with board width and number of tiles
     CheckerBoard(double wCheckerboard, double wTile, bool texture = false){
-        topLeft = Vector3D(-wCheckerboard/2, -wCheckerboard/2, 0);
+        bottomLeft = Vector3D(-wCheckerboard/2, -wCheckerboard/2, 0);
+        this->wCheckerboard = wCheckerboard;
         this->wTile = wTile;
         nTile = (int) wCheckerboard / wTile;
         this->texture = texture;
@@ -205,27 +207,105 @@ public:
         texture_b = read_texture("texture_b.bmp");
     }
 
+    void setTopLeft(Vector3D topLeft){
+        this->bottomLeft = topLeft;
+    }
+
+    void addToTopLeft(double x, double y, double z){
+        extra_x += x;
+        extra_y += y;
+    }
+
+    void drawTile(double x, double y, double w, double h){
+        glBegin(GL_QUADS);{
+            glVertex3f(x, y, 0);
+            glVertex3f(x+w, y, 0);
+            glVertex3f(x+w, y+h, 0);
+            glVertex3f(x, y+h, 0);
+        }glEnd();
+    }
+
     void draw(){
         if(texture){
             return;
         }
+
+        // inifinite checkerboard
         double x, y;
+        // width from center and bottomLeft
+        double n_hori = -bottomLeftX() / wTile;
+        if(extra_x>0)
+            n_hori += extra_x/wTile;
+        double n_vert = -bottomLeftY() / wTile;
+        if(extra_y>0)
+            n_vert += extra_y/wTile;
+
         glBegin(GL_QUADS);{
-            for(int i=0; i<nTile; i++){
-                for(int j=0; j<nTile; j++){
-                    x = topLeft.x + i*wTile;
-                    y = topLeft.y + j*wTile;
-
-                    int color = (i+j)%2 == 0 ? 1 : 0;
-                    glColor3f(color, color, color);
-
-                    glVertex3f(x, y, 0);
-                    glVertex3f(x+wTile, y, 0);
-                    glVertex3f(x+wTile, y+wTile, 0);
-                    glVertex3f(x, y+wTile, 0);
+            // draw extra tiles
+            // extra_x and etra_y can be negative
+        
+            // draw n_hori*n_vert tiles in bottom left
+            for(int i=0; i<n_hori; i++){
+                for(int j=0; j<n_vert; j++){
+                    x =  -i*wTile;
+                    y = - j*wTile;
+                    if((i+j)%2 == 1){
+                        glColor3f(0, 0, 0);
+                    }
+                    else{
+                        glColor3f(1, 1, 1);
+                    }
+                    drawTile(x, y, -wTile, -wTile);
                 }
             }
+
+            // draw n_hori*extra_y tiles in bottom right
+            for(int i=0; i<n_hori; i++){
+                for(int j=0; j<n_vert; j++){
+                    x =  i*wTile;
+                    y =  -j*wTile;
+                    if((i+j)%2 == 0){
+                        glColor3f(0, 0, 0);
+                    }
+                    else{
+                        glColor3f(1, 1, 1);
+                    }
+                    drawTile(x, y, wTile, -wTile);
+                }
+            }
+
+            // draw n_hori*n_vert tiles in top right
+            for(int i=0; i<n_hori; i++){
+                for(int j=0; j<n_vert; j++){
+                    x =  i*wTile;
+                    y =  j*wTile;
+                    if((i+j)%2 == 1){
+                        glColor3f(0, 0, 0);
+                    }
+                    else{
+                        glColor3f(1, 1, 1);
+                    }
+                    drawTile(x, y, wTile, wTile);
+                }
+            }
+
+            // draw n_hori*extra_y tiles in top left
+            for(int i=0; i<n_hori; i++){
+                for(int j=0; j<n_vert; j++){
+                    x =  -i*wTile;
+                    y =  j*wTile;
+                    if((i+j)%2 == 0){
+                        glColor3f(0, 0, 0);
+                    }
+                    else{
+                        glColor3f(1, 1, 1);
+                    }
+                    drawTile(x, y, -wTile, wTile);
+                }
+            }
+
         }glEnd();
+    
     }
 
 
@@ -235,14 +315,14 @@ public:
     }
 
     Color getTextureColor(Vector3D p){
-        int i = (p.x - topLeft.x) / wTile;
-        int j = (p.y - topLeft.y) / wTile;
+        int i = (p.x - bottomLeftX()) / wTile;
+        int j = (p.y - bottomLeftY()) / wTile;
 
         int x = (int) (i*wTile);
         int y = (int) (j*wTile);
 
-        double px = (p.x - topLeft.x) - x;
-        double py = (p.y - topLeft.y) - y;
+        double px = (p.x - bottomLeftX()) - x;
+        double py = (p.y - bottomLeftY()) - y;
     
         if((i+j)%2 == 0){
             int pixel_x = (int) (px/wTile * (texture_b.size()-1));
@@ -263,11 +343,23 @@ public:
             return getTextureColor(p);
         }
 
-        int i = (p.x - topLeft.x) / wTile;
-        int j = (p.y - topLeft.y) / wTile;
+        int i = (p.x - bottomLeft.x) / wTile;
+        int j = (p.y - bottomLeft.y) / wTile;
         int color = (i+j)%2 == 0 ? 1 : 0;
         return Color(color, color, color);
 
+    }
+
+    double bottomLeftX(){
+        if(extra_x<0)
+            return bottomLeft.x + (int)(extra_x/wTile)*wTile;
+        return bottomLeft.x;
+    }
+
+    double bottomLeftY(){
+        if(extra_y<0)
+            return bottomLeft.y + (int)(extra_y/wTile)*wTile;
+        return bottomLeft.y;
     }
 
     // find intersection point of the ray with the board
@@ -286,11 +378,11 @@ public:
         Vector3D intersectionPoint = ray.origin + ray.dir*t;
 
         // check if the intersection point is inside the board
-        if(intersectionPoint.x < topLeft.x || intersectionPoint.x > -topLeft.x){
+        if(intersectionPoint.x < bottomLeftX()){
             return INF;
         }
 
-        if(intersectionPoint.y < topLeft.y || intersectionPoint.y > -topLeft.y){
+        if(intersectionPoint.y < bottomLeftY()){
             return INF;
         }
 
