@@ -1,0 +1,5 @@
+Variables: X,Y
+Constants: +,-,[,]
+Start: X
+Angle: 60
+Rules: X->X+YF+, Y->-FX-Y

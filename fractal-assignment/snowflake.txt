@@ -1,0 +1,5 @@
+Variables: F
+Constants: +,-,[,]
+Start: F++F++F
+Angle: 60
+Rules: F->F-F++F-F

@@ -1,0 +1,5 @@
+Variables: X, F
+Constants: +,-,[,]
+Start: X
+Angle: 22.5
+Rules: X-> F-[[X]+X]+F[+FX]-X, F-> FF
