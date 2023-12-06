@@ -3,19 +3,19 @@
         {
             "type": "cppbuild",
             "label": "C/C++: cpp.exe build active file",
-            "command": "D:\\myprograms\\mingw-gcc\\mingw-w64\\mingw64\\bin\\g++.exe",
-            //"command" : "D:\\myprograms\\mingw-gcc\\mingw64-opengl\\bin\\g++.exe",
+            //"command": "D:\\myprograms\\mingw-gcc\\mingw-w64\\mingw64\\bin\\g++.exe",
+            "command" : "D:\\myprograms\\mingw-gcc\\mingw64-opengl\\bin\\g++.exe",
             "args": [
                 "-fdiagnostics-color=always",
                 "-g",
                 "${file}",
                 "-o",
                 "${fileDirname}\\${fileBasenameNoExtension}.exe",
-                // "-lfreeglut",
-                // "-lglu32",
-                // "-lopengl32",
-                // "-lwinmm",
-                // "-lglew32"
+                "-lfreeglut",
+                "-lglu32",
+                "-lopengl32",
+                "-lwinmm",
+                "-lglew32"
             ],
             "options": {
                 "cwd": "${fileDirname}"

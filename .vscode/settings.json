@@ -1,8 +1,8 @@
 {
     "code-runner.executorMap": {
         "c": "cd $dir & D:\\myprograms\\mingw-gcc\\mingw64-opengl\\bin\\gcc $fileName -o $fileNameWithoutExt -lopengl32 -lglew32 -lfreeglut -lglu32 && $dir$fileNameWithoutExt",
-        //"cpp": "cd $dir & D:\\myprograms\\mingw-gcc\\mingw64-opengl\\bin\\g++ $fileName -o $fileNameWithoutExt -lopengl32 -lglew32 -lfreeglut -lglu32 && $dir$fileNameWithoutExt " ,
-        "cpp": "cd $dir & g++ $fileName -o $fileNameWithoutExt && $dir$fileNameWithoutExt " ,
+        "cpp": "cd $dir & D:\\myprograms\\mingw-gcc\\mingw64-opengl\\bin\\g++ $fileName -o $fileNameWithoutExt -lopengl32 -lglew32 -lfreeglut -lglu32 && $dir$fileNameWithoutExt " ,
+        //"cpp": "cd $dir & g++ $fileName -o $fileNameWithoutExt && $dir$fileNameWithoutExt " ,
     },
     "files.associations": {
         "*.COBOL*": "cobol",
@@ -70,6 +70,7 @@
         "stdexcept": "cpp",
         "streambuf": "cpp",
         "typeinfo": "cpp",
-        "complex": "cpp"
+        "complex": "cpp",
+        "regex": "cpp"
     }
 }
